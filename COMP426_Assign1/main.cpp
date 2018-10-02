@@ -23,43 +23,59 @@ struct Point {
     GLfloat X;
     GLfloat Y;
     GLfloat Size = 0.005f;
-    
+    float Mass = 2.0f;
+    vector<float> Force = {0, 0};
 };
 
 
 struct Node {
     vector<Point> PointsInNodeQuadrant;
-    GLfloat QuadrantSize;
-    bool NodeHasOnlyOnePoint = false;
     vector<Node> LeafNodes;
+    GLfloat QuadrantSize;
     GLfloat OriginCoordinates[2];
-    int PlanetCount = 0;
+
+    bool NodeHasOnlyOnePoint    = false;
+    bool NodeIsEmpty            = false;
+
+    int PlanetCount             = 0;
+    float Mass                  = 0;
+    float CenterOfMass[2];
+    vector<float> Force         = {0, 0};
 };
 
 vector<vector<GLfloat>> PlanetCoordinates(10, vector<GLfloat>(2));
 vector<Point> Points;
 
-GLfloat Size= 0.02f;
+GLfloat Size = 0.02f;
 
-void drawCircle( GLfloat x, GLfloat y, GLfloat z, GLfloat radius, GLint numberOfSides );
+void drawCircle( GLfloat x, GLfloat y, GLfloat z, GLfloat radius, GLint numberOfSides);
 
 
 void display(Point);
 void GenerateRandomPoints();
 void display(GLfloat, GLfloat);
 void Tree(Node);
-
+void ComputeMassDistribution(Node);
+void CalculateForceOnPoint();
+vector<float> CalculateResultingForce(Point);
 
 int main() {
     srand(time(NULL));
     Point P;
     //cout << "Displaying Point P's X:" << P.X << endl;
     //cout << "Displaying Point P's Y:" << P.Y << endl;
+   
     GenerateRandomPoints();
     Node Root;
     Root.QuadrantSize = 2.0f;
     Root.OriginCoordinates[0] = 0.0f;
     Root.OriginCoordinates[1] = 0.0f;
+    
+    for (int i = 0; i < Points.size(); i++){
+        Root.PointsInNodeQuadrant.push_back(Points[i]);
+        Root.PlanetCount++;
+    }
+    
     
     //Initialize the library
     if (!glfwInit()){
@@ -208,14 +224,17 @@ void display(Point P) {
 
 void Tree(Node Parent){
     
-
-    for (int i = 0; i < Points.size(); i++)
-        Parent.PointsInNodeQuadrant.push_back(Points[i]);
-    
-    if (Parent.PointsInNodeQuadrant.size() < 1){
-        Parent.NodeHasOnlyOnePoint = true;
+    if (Parent.PointsInNodeQuadrant.size() <= 1){
+        if (Parent.PointsInNodeQuadrant.size() == 0)
+            Parent.NodeIsEmpty = true;
+        else
+            Parent.NodeHasOnlyOnePoint = true;
     }
     else{
+        
+        Parent.NodeIsEmpty = false;
+        Parent.NodeHasOnlyOnePoint = false;
+        
         //Each leaf will represent a different quadrant. Leaf1 is Quadrant 1, Leaf2 is Quadrant 2, ... and so forth.
         Node Leaf1, Leaf2, Leaf3, Leaf4;
         //bool TreeCompleted = false;
@@ -244,37 +263,110 @@ void Tree(Node Parent){
         for (int j = 0; j < Parent.PointsInNodeQuadrant.size(); j++){
             //Populating each node's planet list with planets that belong in it's quadrant.
             
-            if (Parent.PointsInNodeQuadrant[j].X >=Leaf1.OriginCoordinates[0] && Parent.PointsInNodeQuadrant[j].Y >= Leaf1.OriginCoordinates[1])
+            if (Parent.PointsInNodeQuadrant[j].X >=Leaf1.OriginCoordinates[0] && Parent.PointsInNodeQuadrant[j].Y >= Leaf1.OriginCoordinates[1]){
                 Leaf1.PointsInNodeQuadrant.push_back(Parent.PointsInNodeQuadrant[j]);
-            else if (Parent.PointsInNodeQuadrant[j].X < Leaf2.OriginCoordinates[0] && Parent.PointsInNodeQuadrant[j].Y >= Leaf2.OriginCoordinates[1])
+                Leaf1.PlanetCount++;
+            }
+            else if (Parent.PointsInNodeQuadrant[j].X < Leaf2.OriginCoordinates[0] && Parent.PointsInNodeQuadrant[j].Y >= Leaf2.OriginCoordinates[1]){
                 Leaf2.PointsInNodeQuadrant.push_back(Parent.PointsInNodeQuadrant[j]);
-            else if (Parent.PointsInNodeQuadrant[j].X < Leaf3.OriginCoordinates[0] && Parent.PointsInNodeQuadrant[j].Y < Leaf3.OriginCoordinates[1])
+                Leaf2.PlanetCount++;
+            }
+            else if (Parent.PointsInNodeQuadrant[j].X < Leaf3.OriginCoordinates[0] && Parent.PointsInNodeQuadrant[j].Y < Leaf3.OriginCoordinates[1]){
                 Leaf3.PointsInNodeQuadrant.push_back(Parent.PointsInNodeQuadrant[j]);
-            else if (Parent.PointsInNodeQuadrant[j].X >= Leaf4.OriginCoordinates[0] && Parent.PointsInNodeQuadrant[j].Y < Leaf4.OriginCoordinates[1])
+                Leaf3.PlanetCount++;
+            }
+            else if (Parent.PointsInNodeQuadrant[j].X >= Leaf4.OriginCoordinates[0] && Parent.PointsInNodeQuadrant[j].Y < Leaf4.OriginCoordinates[1]){
                 Leaf4.PointsInNodeQuadrant.push_back(Parent.PointsInNodeQuadrant[j]);
+                Leaf4.PlanetCount++;
+            }
         }
         
-        if (Leaf1.PointsInNodeQuadrant.size() > 1)
+        if (Leaf1.PointsInNodeQuadrant.size() >= 1){
+            Parent.LeafNodes.push_back(Leaf1);
             Tree(Leaf1);
-        if (Leaf2.PointsInNodeQuadrant.size() > 1)
+        }
+        if (Leaf2.PointsInNodeQuadrant.size() >= 1){
+            Parent.LeafNodes.push_back(Leaf1);
             Tree(Leaf2);
-        if (Leaf3.PointsInNodeQuadrant.size() > 1)
+        }
+        if (Leaf3.PointsInNodeQuadrant.size() >= 1){
+            Parent.LeafNodes.push_back(Leaf1);
             Tree(Leaf3);
-        if (Leaf4.PointsInNodeQuadrant.size() > 1)
+        }
+        if (Leaf4.PointsInNodeQuadrant.size() >= 1){
+            Parent.LeafNodes.push_back(Leaf1);
             Tree(Leaf4);
-            
+        }
         //}
-        
     }
+}
+
+//Computing the Mass of each Node and it's center of mass
+void ComputeMassDistribution(Node Parent){
     
-    
+    if (Parent.NodeHasOnlyOnePoint == true){
+        Parent.CenterOfMass[0] = Parent.PointsInNodeQuadrant[0].X;
+        Parent.CenterOfMass[1] = Parent.PointsInNodeQuadrant[0].Y;
+        Parent.Mass = Parent.PointsInNodeQuadrant[0].Mass;
+    }
+    else {
+        for (int i = 0; i < Parent.LeafNodes.size(); i ++){
+            ComputeMassDistribution(Parent.LeafNodes[i]);
+            Parent.Mass += Parent.LeafNodes[i].Mass;
+            Parent.CenterOfMass[0] += (Parent.LeafNodes[i].Mass * Parent.LeafNodes[i].CenterOfMass[0]);
+            Parent.CenterOfMass[1] += (Parent.LeafNodes[i].Mass * Parent.LeafNodes[i].CenterOfMass[1]);        }
+    }
+    Parent.CenterOfMass[0] /= Parent.Mass;
+    Parent.CenterOfMass[1] /= Parent.Mass;
 }
 
 
+void CalculateForceOnPoint(){
+    for ( int i = 0; i < Points.size(); i++){
+        Points[i].Force = CalculateResultingForce(Points[i]);
+    }
+    
+}
+
+//vector<float> CalculateResultingForce(Point TargetPlanet){
+//    TargetPlanet.Force[0] = 0;
+//    TargetPlanet.Force[1] = 0;
+//    
+//    for (int i = 0; i < .LeafNodes.size(); i ++){
+//    
+//    
+//}
 
 
 
 
+/*
+ 
+ Function MainApp::CalcForce
+ for all particles
+ force = RootNode.CalculateForceFromTree(particle)
+ end for
+ end
+ 
+ Function force = TreeNode::CalculateForce(targetParticle)
+ force = 0
+ 
+ if number of particle equals 1
+ force = Gravitational force between targetParticle and particle
+ else
+ r = distance from nodes center of mass to targetParticle
+ d = height of the node
+ if (d/r < θ)
+ force = Gravitational force between targetParticle and node
+ else
+ for all child nodes n
+ force += n.CalculateForce(particle)
+ end for
+ end if
+ end
+ end
+ 
+ */
 
 
 

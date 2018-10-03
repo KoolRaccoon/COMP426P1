@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <vector>
+#include <cmath>
 
 using namespace std;
 
@@ -45,19 +46,21 @@ struct Node {
 
 vector<vector<GLfloat>> PlanetCoordinates(10, vector<GLfloat>(2));
 vector<Point> Points;
+vector<Point*> Pointss;
 
-GLfloat Size = 0.02f;
+GLfloat Size = 0.005f;
 
 void drawCircle( GLfloat x, GLfloat y, GLfloat z, GLfloat radius, GLint numberOfSides);
 
 
-void display(Point);
+void display(vector<Point*>);
 void GenerateRandomPoints();
 void display(GLfloat, GLfloat);
 void Tree(Node);
 void ComputeMassDistribution(Node);
-void CalculateForceOnPoint();
-vector<float> CalculateResultingForce(Point);
+void CalculateForceOnPoint(Node);
+vector<float> CalculateResultingForce(Node, Point);
+const float G = 6.67398 * 0.00000000001;
 
 int main() {
     srand(time(NULL));
@@ -109,17 +112,18 @@ int main() {
         
 
 //      Render here
-        for (int j=0; j<10; j++){
-            glBegin(GL_POLYGON);
+        //for (int j=0; j<10; j++){
+           // glBegin(GL_POLYGON);
             
             //P.X = PlanetCoordinates[j][0];
             //P.Y = PlanetCoordinates[j][1];
             
-            display(PlanetCoordinates[j][0], PlanetCoordinates[j][1]);
-            glEnd();
-            glPopMatrix();
+            //display(PlanetCoordinates[j][0], PlanetCoordinates[j][1]);
+            display(Pointss);
+            //glEnd();
+            //glPopMatrix();
             
-        }
+//        }
 
         //Swap front and back buffers
         
@@ -137,13 +141,13 @@ int main() {
 void GenerateRandomPoints(){
 
     for (int i=0; i<10; i++){
-        Point P;
-        PlanetCoordinates[i][0] = ((float(rand()) / float(RAND_MAX)) * 2) + -1;
-        PlanetCoordinates[i][1] = ((float(rand()) / float(RAND_MAX)) * 2) + -1;
+        Point * P = new Point;
+        PlanetCoordinates[i][0] = ((float(rand()) / float(RAND_MAX)) * 1) + -0.5;
+        PlanetCoordinates[i][1] = ((float(rand()) / float(RAND_MAX)) * 1) + -0.5;
         //cout << "displaying X: " << PlanetCoordinates[i][0] << "Displaying Y: " << PlanetCoordinates[i][1] << endl;
-        P.X = PlanetCoordinates[i][0];
-        P.Y = PlanetCoordinates[i][1];
-        Points.push_back(P);
+        P->X = PlanetCoordinates[i][0];
+        P->Y = PlanetCoordinates[i][1];
+        Pointss.push_back(P);
         //display(P);
     }
     
@@ -181,18 +185,18 @@ void display(GLfloat X, GLfloat Y) {
 }
 
 
-void display(Point P) {
+void display(vector<Point*> Points) {
 
 
-    glClearColor(0.2, 0.3, 0.4, 0.5);
+    //glClearColor(0.2, 0.3, 0.4, 0.5);
     
     //clear color and depth buffer
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     
-    glColor3f(1, 1, 1);
+    //glColor3f(1, 1, 1);
 
-    glBegin(GL_POLYGON);
+    //glBegin(GL_POLYGON);
     
 
     //Square
@@ -206,17 +210,21 @@ void display(Point P) {
 //    glVertex2f( (P.X + P.Size) - MoveDistance, (P.Y - P.Size));
 //    glVertex2f( (P.X + P.Size) - MoveDistance, (P.Y + P.Size));
 
+    for (int j=0; j<10; j++){
+        glBegin(GL_POLYGON);
+        
+        glVertex2f((Points[j]->X - Points[j]->Size), (Points[j]->Y + Points[j]->Size));
+        glVertex2f((Points[j]->X - Points[j]->Size), (Points[j]->Y - Points[j]->Size));
+        glVertex2f((Points[j]->X + Points[j]->Size), (Points[j]->Y - Points[j]->Size));
+        glVertex2f((Points[j]->X + Points[j]->Size), (Points[j]->Y + Points[j]->Size));
+        glEnd();
+        glPopMatrix();
+    }
     
-    glVertex2f( (P.X - P.Size), (P.Y + P.Size));
-    glVertex2f( (P.X - P.Size), (P.Y - P.Size));
-    glVertex2f( (P.X + P.Size), (P.Y - P.Size));
-    glVertex2f( (P.X + P.Size), (P.Y + P.Size));
-    
-    
-    glEnd();
-    glPopMatrix();
+    //glEnd();
+    //glPopMatrix();
 
-    this_thread::sleep_for(chrono::milliseconds(33));
+    //this_thread::sleep_for(chrono::milliseconds(33));
     
     MoveDistance = MoveDistance + 0.01f;
 }
@@ -320,22 +328,63 @@ void ComputeMassDistribution(Node Parent){
     Parent.CenterOfMass[1] /= Parent.Mass;
 }
 
-
-void CalculateForceOnPoint(){
+//Computes the Total Forces acting on each Planet.
+void CalculateForceOnPoint(Node Root){
     for ( int i = 0; i < Points.size(); i++){
-        Points[i].Force = CalculateResultingForce(Points[i]);
+        Points[i].Force = CalculateResultingForce(Root, Points[i]);
     }
     
 }
 
-//vector<float> CalculateResultingForce(Point TargetPlanet){
-//    TargetPlanet.Force[0] = 0;
-//    TargetPlanet.Force[1] = 0;
-//    
-//    for (int i = 0; i < .LeafNodes.size(); i ++){
-//    
-//    
-//}
+// Computes the Total Force of the Tree that is acting upon a Certain Planet.
+vector<float> CalculateResultingForce(Node Parent, Point TargetPlanet){
+    TargetPlanet.Force[0] = 0;
+    TargetPlanet.Force[1] = 0;
+    vector<float> SumOfForces = {0, 0};
+    int dis = 0;
+    
+    for (int i = 0; i < Parent.LeafNodes.size(); i ++){
+        if (Parent.LeafNodes[i].PlanetCount == 1){
+            //Compute Force between two planets
+            float Force = 0;
+            float Theta = 0;
+            Theta = tan((TargetPlanet.X - Parent.LeafNodes[i].PointsInNodeQuadrant[0].X)/(TargetPlanet.Y - Parent.LeafNodes[i].PointsInNodeQuadrant[0].Y));
+            dis   = sqrt(pow(2.0, (TargetPlanet.X - Parent.LeafNodes[i].PointsInNodeQuadrant[0].X)) + pow(2.0, (TargetPlanet.Y - Parent.LeafNodes[i].PointsInNodeQuadrant[0].Y)));
+            Force = (G*TargetPlanet.Mass* Parent.LeafNodes[i].Mass)/(dis*dis);
+            SumOfForces[0] += Force * cos(Theta);
+            SumOfForces[1] += Force * sin(Theta);
+            Theta = 0;
+            dis   = 0;
+            Force = 0;
+        }
+        else {
+            int r = 0;
+            int d = 0;
+            r = sqrt(pow(2.0, (TargetPlanet.X - Parent.LeafNodes[i].CenterOfMass[0])) + pow(2.0, (TargetPlanet.Y - Parent.LeafNodes[i].CenterOfMass[1])));
+            d = Parent.LeafNodes[i].QuadrantSize;
+            if (d/r < 1){
+                //Compute Force between Target Planet and Node
+                float Force = 0;
+                float Theta = 0;
+                Theta = tan((TargetPlanet.X - Parent.LeafNodes[i].CenterOfMass[0])/(TargetPlanet.Y - Parent.LeafNodes[i].CenterOfMass[1]));
+                dis   = sqrt(pow(2.0, (TargetPlanet.X - Parent.LeafNodes[i].CenterOfMass[0])) + pow(2.0, (TargetPlanet.Y - Parent.LeafNodes[i].CenterOfMass[1])));
+                Force = (G*TargetPlanet.Mass* Parent.LeafNodes[i].Mass)/(dis*dis);
+                SumOfForces[0] += Force * cos(Theta);
+                SumOfForces[1] += Force * sin(Theta);
+                Theta = 0;
+                dis   = 0;
+                Force = 0;
+
+            }
+            else {
+                SumOfForces = CalculateResultingForce(Parent.LeafNodes[i], TargetPlanet);
+                TargetPlanet.Force[0] += SumOfForces[0];
+                TargetPlanet.Force[1] += SumOfForces[1];
+            }
+        }
+    }
+    return TargetPlanet.Force;
+}
 
 
 
@@ -343,25 +392,25 @@ void CalculateForceOnPoint(){
 /*
  
  Function MainApp::CalcForce
- for all particles
- force = RootNode.CalculateForceFromTree(particle)
- end for
- end
+    for all particles
+        force = RootNode.CalculateForceFromTree(particle)
+    end for
+end
  
- Function force = TreeNode::CalculateForce(targetParticle)
- force = 0
+    Function force = TreeNode::CalculateForce(targetParticle)
+    force = 0
  
- if number of particle equals 1
- force = Gravitational force between targetParticle and particle
- else
- r = distance from nodes center of mass to targetParticle
- d = height of the node
- if (d/r < θ)
- force = Gravitational force between targetParticle and node
- else
- for all child nodes n
- force += n.CalculateForce(particle)
- end for
+     if number of particle equals 1
+        force = Gravitational force between targetParticle and particle
+     else
+        r = distance from nodes center of mass to targetParticle
+        d = height of the node
+     if (d/r < θ)
+        force = Gravitational force between targetParticle and node
+     else
+        for all child nodes n
+        force += n.CalculateForce(particle)
+     end for
  end if
  end
  end

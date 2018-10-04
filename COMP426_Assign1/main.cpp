@@ -1,3 +1,4 @@
+//#include "pch.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <math.h>
@@ -5,7 +6,7 @@
 #include <chrono>
 #include <thread>
 
-#include <unistd.h>
+//#include <unistd.h>
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
@@ -67,7 +68,7 @@ int main() {
     srand(time(NULL));
 
     GenerateRandomPoints();
-    Node * Root;
+    Node * Root = new Node;
     Root->QuadrantSize = 2.0f;
     Root->OriginCoordinates[0] = 0.0f;
     Root->OriginCoordinates[1] = 0.0f;
@@ -194,7 +195,7 @@ void Tree(Node * Parent){
         Parent->NodeHasOnlyOnePoint = false;
         
         //Each leaf will represent a different quadrant. Leaf1 is Quadrant 1, Leaf2 is Quadrant 2, ... and so forth.
-        Node *Leaf1, *Leaf2, *Leaf3, *Leaf4;
+        Node *Leaf1, *Leaf2, *Leaf3, *Leaf4 = new Node;
         //bool TreeCompleted = false;
         //while (TreeCompleted == false){
             //Calculating the new Quadrant Size of the leaf nodes
@@ -405,7 +406,7 @@ void display(GLfloat X, GLfloat Y) {
     //MoveDistance = MoveDistance + 0.01f;
 }
 
-
+/*
 void drawCircle( GLfloat x, GLfloat y, GLfloat z, GLfloat radius, GLint numberOfSides )
 {
     int numberOfVertices = numberOfSides + 2;
@@ -441,15 +442,4 @@ void drawCircle( GLfloat x, GLfloat y, GLfloat z, GLfloat radius, GLint numberOf
     glDrawArrays( GL_TRIANGLE_FAN, 0, numberOfVertices);
     glDisableClientState( GL_VERTEX_ARRAY );
 }
-
-
-
-
-
-
-
-
-
-
-
-
+*/

@@ -1,4 +1,4 @@
-//#include "pch.h"
+#include "pch.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <math.h>
@@ -25,8 +25,8 @@ struct Point {
     GLfloat X;
     GLfloat Y;
     GLfloat Size = 0.005f;
-    float Mass = 2.0f;
-    vector<float> Force = {0, 0};
+    GLfloat Mass = 2.0f;
+    vector<GLfloat> Force = {0.0f, 0.0f};
 };
 
 
@@ -34,15 +34,15 @@ struct Node {
     vector<Point*> PointsInNodeQuadrant;
     vector<Node*> LeafNodes;
     GLfloat QuadrantSize;
-    GLfloat OriginCoordinates[2];
+	GLfloat OriginCoordinates[2] = { 0.0f };
 
     bool NodeHasOnlyOnePoint    = false;
     bool NodeIsEmpty            = false;
 
-    int PlanetCount             = 0;
-    float Mass                  = 0;
-    float CenterOfMass[2];
-    vector<float> Force         = {0, 0};
+    int PlanetCount         = 0;
+    GLfloat Mass            = 0.0f;
+	GLfloat CenterOfMass[2] = {0.0f};
+    vector<GLfloat> Force   = {0.0f, 0.0f};
 };
 
 vector<vector<GLfloat>> PlanetCoordinates(10, vector<GLfloat>(2));
@@ -51,7 +51,7 @@ vector<Point*> Pointss;
 
 GLfloat Size = 0.005f;
 
-void drawCircle( GLfloat x, GLfloat y, GLfloat z, GLfloat radius, GLint numberOfSides);
+//void drawCircle( GLfloat x, GLfloat y, GLfloat z, GLfloat radius, GLint numberOfSides);
 
 
 void display(vector<Point*>);
@@ -68,16 +68,7 @@ int main() {
     srand(time(NULL));
 
     GenerateRandomPoints();
-    Node * Root = new Node;
-    Root->QuadrantSize = 2.0f;
-    Root->OriginCoordinates[0] = 0.0f;
-    Root->OriginCoordinates[1] = 0.0f;
-    
-    for (int i = 0; i < Points.size(); i++){
-        Root->PointsInNodeQuadrant.push_back(Pointss[i]);
-        Root->PlanetCount++;
-    }
-    
+  
     
     //Initialize the library
     if (!glfwInit()){
@@ -100,7 +91,6 @@ int main() {
 //     Loop until the user closes the window 
     while (!glfwWindowShouldClose(window))
     {
-        Tree(Root);
         glClearColor(0.2, 0.3, 0.4, 0.5);
         
         //clear color and depth buffer
@@ -110,22 +100,25 @@ int main() {
         glColor3f(1, 1, 1);
         
 
-//      Render here
-        //for (int j=0; j<10; j++){
-           // glBegin(GL_POLYGON);
-            
-            //P.X = PlanetCoordinates[j][0];
-            //P.Y = PlanetCoordinates[j][1];
-            
-            //display(PlanetCoordinates[j][0], PlanetCoordinates[j][1]);
+		Node * Root = new Node;
+		Root->QuadrantSize = 2.0f;
+		Root->OriginCoordinates[0] = 0.0f;
+		Root->OriginCoordinates[1] = 0.0f;
+
+		for (int i = 0; i < Pointss.size(); i++) {
+			Root->PointsInNodeQuadrant.push_back(Pointss[i]);
+			Root->PlanetCount++;
+		}
+
+
             display(Pointss);
-            //glEnd();
-            //glPopMatrix();
-            
-//        }
+			Tree(Root);
+			ComputeMassDistribution(Root);
+			CalculateForceOnPoint(Root);
+			delete Root;
+
 
         //Swap front and back buffers
-        
         glfwSwapBuffers(window);
         
         //Poll for and process events
@@ -138,16 +131,25 @@ int main() {
 
 
 void GenerateRandomPoints(){
+	
 
     for (int i=0; i<10; i++){
+		bool DuplicatePoint = false;
         Point * P = new Point;
-        PlanetCoordinates[i][0] = ((float(rand()) / float(RAND_MAX)) * 1) + -0.5;
-        PlanetCoordinates[i][1] = ((float(rand()) / float(RAND_MAX)) * 1) + -0.5;
+        PlanetCoordinates[i][0] = ((float(rand()) / float(RAND_MAX)) * 2) + -1.0;
+        PlanetCoordinates[i][1] = ((float(rand()) / float(RAND_MAX)) * 2) + -1.0;
         //cout << "displaying X: " << PlanetCoordinates[i][0] << "Displaying Y: " << PlanetCoordinates[i][1] << endl;
         P->X = PlanetCoordinates[i][0];
         P->Y = PlanetCoordinates[i][1];
-        Pointss.push_back(P);
-        //display(P);
+		for (int j = 0; j < Pointss.size(); j++) {
+			if (Pointss[j]->X == P->X && Pointss[j]->Y == P->Y) {
+				i--;
+				DuplicatePoint = true;
+			}
+		}
+		if (DuplicatePoint == false)
+	        Pointss.push_back(P);
+        
     }
     
  
@@ -195,7 +197,7 @@ void Tree(Node * Parent){
         Parent->NodeHasOnlyOnePoint = false;
         
         //Each leaf will represent a different quadrant. Leaf1 is Quadrant 1, Leaf2 is Quadrant 2, ... and so forth.
-        Node *Leaf1, *Leaf2, *Leaf3, *Leaf4 = new Node;
+        Node *Leaf1 = new Node, *Leaf2 = new Node, *Leaf3 = new Node, *Leaf4 = new Node;
         //bool TreeCompleted = false;
         //while (TreeCompleted == false){
             //Calculating the new Quadrant Size of the leaf nodes
@@ -222,19 +224,19 @@ void Tree(Node * Parent){
         for (int j = 0; j < Parent->PointsInNodeQuadrant.size(); j++){
             //Populating each node's planet list with planets that belong in it's quadrant.
             
-            if (Parent->PointsInNodeQuadrant[j]->X >= Leaf1->OriginCoordinates[0] && Parent->PointsInNodeQuadrant[j]->Y >= Leaf1->OriginCoordinates[1]){
+            if (Parent->PointsInNodeQuadrant[j]->X >= Parent->OriginCoordinates[0] && Parent->PointsInNodeQuadrant[j]->Y >= Parent->OriginCoordinates[1]){
                 Leaf1->PointsInNodeQuadrant.push_back(Parent->PointsInNodeQuadrant[j]);
                 Leaf1->PlanetCount++;
             }
-            else if (Parent->PointsInNodeQuadrant[j]->X < Leaf2->OriginCoordinates[0] && Parent->PointsInNodeQuadrant[j]->Y >= Leaf2->OriginCoordinates[1]){
+            else if (Parent->PointsInNodeQuadrant[j]->X < Parent->OriginCoordinates[0] && Parent->PointsInNodeQuadrant[j]->Y >= Parent->OriginCoordinates[1]){
                 Leaf2->PointsInNodeQuadrant.push_back(Parent->PointsInNodeQuadrant[j]);
                 Leaf2->PlanetCount++;
             }
-            else if (Parent->PointsInNodeQuadrant[j]->X < Leaf3->OriginCoordinates[0] && Parent->PointsInNodeQuadrant[j]->Y < Leaf3->OriginCoordinates[1]){
+            else if (Parent->PointsInNodeQuadrant[j]->X < Parent->OriginCoordinates[0] && Parent->PointsInNodeQuadrant[j]->Y < Parent->OriginCoordinates[1]){
                 Leaf3->PointsInNodeQuadrant.push_back(Parent->PointsInNodeQuadrant[j]);
                 Leaf3->PlanetCount++;
             }
-            else if (Parent->PointsInNodeQuadrant[j]->X >= Leaf4->OriginCoordinates[0] && Parent->PointsInNodeQuadrant[j]->Y < Leaf4->OriginCoordinates[1]){
+            else if (Parent->PointsInNodeQuadrant[j]->X >= Parent->OriginCoordinates[0] && Parent->PointsInNodeQuadrant[j]->Y < Parent->OriginCoordinates[1]){
                 Leaf4->PointsInNodeQuadrant.push_back(Parent->PointsInNodeQuadrant[j]);
                 Leaf4->PlanetCount++;
             }
@@ -245,15 +247,15 @@ void Tree(Node * Parent){
             Tree(Leaf1);
         }
         if (Leaf2->PointsInNodeQuadrant.size() >= 1){
-            Parent->LeafNodes.push_back(Leaf1);
+            Parent->LeafNodes.push_back(Leaf2);
             Tree(Leaf2);
         }
         if (Leaf3->PointsInNodeQuadrant.size() >= 1){
-            Parent->LeafNodes.push_back(Leaf1);
+            Parent->LeafNodes.push_back(Leaf3);
             Tree(Leaf3);
         }
         if (Leaf4->PointsInNodeQuadrant.size() >= 1){
-            Parent->LeafNodes.push_back(Leaf1);
+            Parent->LeafNodes.push_back(Leaf4);
             Tree(Leaf4);
         }
         //}
@@ -273,15 +275,18 @@ void ComputeMassDistribution(Node *Parent){
             ComputeMassDistribution(Parent->LeafNodes[i]);
             Parent->Mass += Parent->LeafNodes[i]->Mass;
             Parent->CenterOfMass[0] += (Parent->LeafNodes[i]->Mass * Parent->LeafNodes[i]->CenterOfMass[0]);
-            Parent->CenterOfMass[1] += (Parent->LeafNodes[i]->Mass * Parent->LeafNodes[i]->CenterOfMass[1]);        }
-    }
-    Parent->CenterOfMass[0] /= Parent->Mass;
-    Parent->CenterOfMass[1] /= Parent->Mass;
+            Parent->CenterOfMass[1] += (Parent->LeafNodes[i]->Mass * Parent->LeafNodes[i]->CenterOfMass[1]);        
+		}
+		Parent->CenterOfMass[0] /= Parent->Mass;
+		Parent->CenterOfMass[1] /= Parent->Mass;
+
+	}
+
 }
 
 //Computes the Total Forces acting on each Planet.
 void CalculateForceOnPoint(Node * Root){
-    for ( int i = 0; i < Points.size(); i++){
+    for ( int i = 0; i < Pointss.size(); i++){
         Pointss[i]->Force = CalculateResultingForce(Root, Pointss[i]);
     }
     
@@ -292,13 +297,14 @@ vector<float> CalculateResultingForce(Node *Parent, Point *TargetPlanet){
     TargetPlanet->Force[0] = 0;
     TargetPlanet->Force[1] = 0;
     vector<float> SumOfForces = {0, 0};
-    int dis = 0;
+    GLfloat dis = 0;
+	GLfloat Force = 0;
+	GLfloat Theta = 0;
     
     for (int i = 0; i < Parent->LeafNodes.size(); i ++){
         if (Parent->LeafNodes[i]->PlanetCount == 1){
             //Compute Force between two planets
-            float Force = 0;
-            float Theta = 0;
+
             Theta = tan((TargetPlanet->X - Parent->LeafNodes[i]->PointsInNodeQuadrant[0]->X)/(TargetPlanet->Y - Parent->LeafNodes[i]->PointsInNodeQuadrant[0]->Y));
             dis   = sqrt(pow(2.0, (TargetPlanet->X - Parent->LeafNodes[i]->PointsInNodeQuadrant[0]->X)) + pow(2.0, (TargetPlanet->Y - Parent->LeafNodes[i]->PointsInNodeQuadrant[0]->Y)));
             Force = (G*TargetPlanet->Mass* Parent->LeafNodes[i]->Mass)/(dis*dis);
@@ -309,14 +315,14 @@ vector<float> CalculateResultingForce(Node *Parent, Point *TargetPlanet){
             Force = 0;
         }
         else {
-            int r = 0;
-            int d = 0;
+            GLfloat r = 0;
+            GLfloat d = 0;
             r = sqrt(pow(2.0, (TargetPlanet->X - Parent->LeafNodes[i]->CenterOfMass[0])) + pow(2.0, (TargetPlanet->Y - Parent->LeafNodes[i]->CenterOfMass[1])));
             d = Parent->LeafNodes[i]->QuadrantSize;
             if (d/r < 1){
                 //Compute Force between Target Planet and Node
-                float Force = 0;
-                float Theta = 0;
+                GLfloat Force = 0;
+                GLfloat Theta = 0;
                 Theta = tan((TargetPlanet->X - Parent->LeafNodes[i]->CenterOfMass[0])/(TargetPlanet->Y - Parent->LeafNodes[i]->CenterOfMass[1]));
                 dis   = sqrt(pow(2.0, (TargetPlanet->X - Parent->LeafNodes[i]->CenterOfMass[0])) + pow(2.0, (TargetPlanet->Y - Parent->LeafNodes[i]->CenterOfMass[1])));
                 Force = (G*TargetPlanet->Mass* Parent->LeafNodes[i]->Mass)/(dis*dis);
@@ -336,40 +342,6 @@ vector<float> CalculateResultingForce(Node *Parent, Point *TargetPlanet){
     }
     return TargetPlanet->Force;
 }
-
-
-
-
-/*
- 
- Function MainApp::CalcForce
-    for all particles
-        force = RootNode.CalculateForceFromTree(particle)
-    end for
-end
- 
-    Function force = TreeNode::CalculateForce(targetParticle)
-    force = 0
- 
-     if number of particle equals 1
-        force = Gravitational force between targetParticle and particle
-     else
-        r = distance from nodes center of mass to targetParticle
-        d = height of the node
-     if (d/r < θ)
-        force = Gravitational force between targetParticle and node
-     else
-        for all child nodes n
-        force += n.CalculateForce(particle)
-     end for
- end if
- end
- end
- 
- */
-
-
-
 
 
 
@@ -401,7 +373,7 @@ void display(GLfloat X, GLfloat Y) {
     
     
     
-    this_thread::sleep_for(chrono::milliseconds(5));
+    //this_thread::sleep_for(chrono::milliseconds(5));
     
     //MoveDistance = MoveDistance + 0.01f;
 }

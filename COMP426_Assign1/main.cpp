@@ -20,6 +20,7 @@ using namespace std;
 GLfloat MoveDistance = 0;
 GLFWwindow* window;
 
+//Structure used to store the information about planets
 struct Point {
     
     float X;
@@ -30,10 +31,9 @@ struct Point {
 	vector<float> InitialSpeed		= {0.0, 0.0};
 	vector<float> FinalSpeed		= {0.0, 0.0};
 	vector<float> DistanceToTravel	= {0.0, 0.0};
-
 };
 
-
+//Structure used to create the nodes of the Tree
 struct Node {
     vector<Point*> PointsInNodeQuadrant;
     vector<Node*> LeafNodes;
@@ -49,12 +49,12 @@ struct Node {
     //vector<GLfloat> Force   = {0.0f, 0.0f};
 };
 
-int TotalPlanets = 20;
+int TotalPlanets = 500; //The total number of planets to be generated
 vector<vector<float>> PlanetCoordinates(TotalPlanets, vector<float>(2));
-vector<Point> Points;
+//vector<Point> Points;
 vector<Point*> Pointss;
 
-GLfloat Size = 0.005f;
+//GLfloat Size = 0.005f;
 
 //void drawCircle( GLfloat x, GLfloat y, GLfloat z, GLfloat radius, GLint numberOfSides);
 
@@ -77,12 +77,10 @@ int main() {
 
     GenerateRandomPoints(TotalPlanets);
   
-    
     //Initialize the library
     if (!glfwInit()){
         std::cout << "Error initializing GLFW" << std::endl;
         return -1;
-    
     }
 //     Create a windowed mode window and its OpenGL context 
     window = glfwCreateWindow(800, 1000, "Hello World", NULL, NULL);
@@ -104,29 +102,30 @@ int main() {
         //clear color and depth buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
-        
+		//Gives the color of the points that will appear on the screen
         glColor3f(1, 0.5, 0.5);
         
-
+		//Initializing the Root node of the tree
 		Node * Root = new Node;
 		Root->QuadrantSize = 2.0f;
 		Root->OriginCoordinates[0] = 0.0f;
 		Root->OriginCoordinates[1] = 0.0f;
 
+		//Populating the root node with the previously generated points
 		for (int i = 0; i < Pointss.size(); i++) {
 			Root->PointsInNodeQuadrant.push_back(Pointss[i]);
 			Root->PlanetCount++;
 		}
 
-
-            display(Pointss);
-			Tree(Root);
+            display(Pointss);//Displaying the points 
+			Tree(Root);//Building the tree
 			ComputeMassDistribution(Root);
 			CalculateForceOnPoint(Root);
 			CalculateMoveDistance(Pointss);
 			ResetPointsForce(Pointss);
-			Cleanup(Root);
+			Cleanup(Root);//clear up the memory used by the tree
 			delete Root;
+
 			std::cout << "Finished iterating through game loop" << std::endl;
 
         //Swap front and back buffers
@@ -135,20 +134,26 @@ int main() {
         //Poll for and process events
         glfwPollEvents();
     }
-    
     glfwTerminate();
     return 0;
     }
 
-
+//Randomly generating points on the screen
 void GenerateRandomPoints(int TotalPlanets){
 	
-
     for (int i=0; i< TotalPlanets; i++){
-		bool DuplicatePoint = false;
-        Point * P = new Point;
-        PlanetCoordinates[i][0] = ((float(rand()) / float(RAND_MAX)) * 0.5) + -0.25;
-        PlanetCoordinates[i][1] = ((float(rand()) / float(RAND_MAX)) * 0.5) + -0.25;
+		// Generating coordinates in such a way that the points appear in a circle on the scren
+		float R = 0.5;
+		Point * P = new Point;
+		float a = ((float(rand()) / float(RAND_MAX)) * 1.0) * 2 * 3.14159265359;\
+		float r = R * sqrt((float(rand()) / float(RAND_MAX)) * 1.0);
+		PlanetCoordinates[i][0] = r * cos(a);
+		PlanetCoordinates[i][1] = r * sin(a);
+
+		bool DuplicatePoint = false; //Used to make sure that there are no duplicate points generated
+
+        //PlanetCoordinates[i][0] = ((float(rand()) / float(RAND_MAX)) * 0.5) + -0.25;
+        //PlanetCoordinates[i][1] = ((float(rand()) / float(RAND_MAX)) * 0.5) + -0.25;
         //cout << "displaying X: " << PlanetCoordinates[i][0] << "Displaying Y: " << PlanetCoordinates[i][1] << endl;
         P->X = PlanetCoordinates[i][0];
         P->Y = PlanetCoordinates[i][1];
@@ -159,13 +164,11 @@ void GenerateRandomPoints(int TotalPlanets){
 			}
 		}
 		if (DuplicatePoint == false)
-	        Pointss.push_back(P);
-        
+	        Pointss.push_back(P); //Storing all the points in a vector of pointers
     }
-    
- 
 }
 
+//Function used to display the points on the screen
 void display(vector<Point*> Points) {
 
     //Square
@@ -211,7 +214,6 @@ void Tree(Node * Parent){
             Parent->NodeHasOnlyOnePoint = true;
     }
     else{
-        
         Parent->NodeIsEmpty = false;
         Parent->NodeHasOnlyOnePoint = false;
         
@@ -280,13 +282,11 @@ void Tree(Node * Parent){
             Parent->LeafNodes.push_back(Leaf4);
             Tree(Leaf4);
         }
-        //}
     }
 }
 
 //Computing the Mass of each Node and it's center of mass
 void ComputeMassDistribution(Node *Parent){
-    
     if (Parent->NodeHasOnlyOnePoint == true){
         Parent->CenterOfMass[0] = Parent->PointsInNodeQuadrant[0]->X;
         Parent->CenterOfMass[1] = Parent->PointsInNodeQuadrant[0]->Y;
@@ -301,9 +301,7 @@ void ComputeMassDistribution(Node *Parent){
 		}
 		Parent->CenterOfMass[0] /= Parent->Mass;
 		Parent->CenterOfMass[1] /= Parent->Mass;
-
 	}
-
 }
 
 //Computes the Total Forces acting on each Planet.
@@ -311,7 +309,6 @@ void CalculateForceOnPoint(Node * Root){
     for ( int i = 0; i < Pointss.size(); i++){
         Pointss[i]->Force = CalculateResultingForce(Root, Pointss[i]);
     }
-    
 }
 
 // Computes the Total Force of the Tree that is acting upon a Certain Planet.
@@ -319,13 +316,13 @@ vector<float> CalculateResultingForce(Node *Parent, Point *TargetPlanet){
     //TargetPlanet->Force[0] = 0;
     //TargetPlanet->Force[1] = 0;
     vector<float> SumOfForces = {0, 0};
-    float dis = 0;
-	float Force = 0;
-	float Theta = 0;
     
     for (int i = 0; i < Parent->LeafNodes.size(); i ++){
         if (Parent->LeafNodes[i]->PlanetCount == 1){
             //Compute Force between two planets
+			float dis = 0;
+			float Force = 0;
+			float Theta = 0;
 			float Xcomponent = 0;
 			float Ycomponent = 0;
 			Xcomponent = TargetPlanet->X - Parent->LeafNodes[i]->PointsInNodeQuadrant[0]->X;
@@ -348,11 +345,12 @@ vector<float> CalculateResultingForce(Node *Parent, Point *TargetPlanet){
 			if (r == 0)
 				Ratio = 1;
 		    if (d/r < 1){
-                //Compute Force between Target Planet and Node
+                //Compute Force between Target Point and Node
 				float Force = 0;
 				float Theta = 0;
 				float Xcomponent = 0;
 				float Ycomponent = 0;
+				float dis = 0;
 				Xcomponent = TargetPlanet->X - Parent->LeafNodes[i]->CenterOfMass[0];
 				Ycomponent = TargetPlanet->Y - Parent->LeafNodes[i]->CenterOfMass[1];
                 Theta = tan((Ycomponent)/(Xcomponent));
@@ -363,7 +361,6 @@ vector<float> CalculateResultingForce(Node *Parent, Point *TargetPlanet){
                 Theta = 0;
                 dis   = 0;
                 Force = 0;
-
             }
             else {
                 SumOfForces = CalculateResultingForce(Parent->LeafNodes[i], TargetPlanet);
@@ -379,28 +376,64 @@ vector<float> CalculateResultingForce(Node *Parent, Point *TargetPlanet){
 void CalculateMoveDistance(vector<Point*> Points) {
 	
 	for (int i = 0; i < Points.size(); i++) {
-		float Accelaration[2] = { 0.0 };
+		//Initialize the distance vectors of the points
+		float Distance[2] = {0.0};
+		float DistanceLeftToTravel[2] = {0.0};
+
+		//Determine the acceleration acting on each point
+		float Accelaration[2] = {0.0};
 		Accelaration[0] = Points[i]->Force[0] / Points[i]->Mass;
 		Accelaration[1] = Points[i]->Force[1] / Points[i]->Mass;
 
+		//Finding the final speed of each point after moving for certain time frame
 		Points[i]->FinalSpeed[0] = Accelaration[0] * (1 / 30) + Points[i]->InitialSpeed[0];
 		Points[i]->FinalSpeed[1] = Accelaration[1] * (1 / 30) + Points[i]->InitialSpeed[1];
 
 		//Points[i]->DistanceToTravel[0] += Points[i]->FinalSpeed[0] - Accelaration[0] * pow(2.0, (1 / 30));
 		//Points[i]->DistanceToTravel[1] += Points[i]->FinalSpeed[1] - Accelaration[1] * pow(2.0, (1 / 30));
-		Points[i]->X += Points[i]->FinalSpeed[0] - Accelaration[0] * pow(2.0, (1 / 30));
-		Points[i]->Y += Points[i]->FinalSpeed[1] - Accelaration[1] * pow(2.0, (1 / 30));
+
+		//Calculating the distance each point will travel on the screen
+		Distance[0] = Points[i]->FinalSpeed[0] - Accelaration[0] * pow(2.0, (1 / 30));
+		Distance[1] = Points[i]->FinalSpeed[1] - Accelaration[1] * pow(2.0, (1 / 30));
+
+		//Reinitializing the initial speed of each point after moving
+		Points[i]->InitialSpeed = Points[i]->FinalSpeed;
+		
+		//Handling the cases where the point will move off screen and send it coming from the other side instead
+		if (Points[i]->X + Distance[0] > 1.0) {//Handling the X-axis
+			DistanceLeftToTravel[0] = Points[i]->X + Distance[0] - 1.0;
+			Points[i]->X = -1.0 + DistanceLeftToTravel[0];
+		}
+		else if (Points[i]->X + Distance[0] < -1.0){
+			DistanceLeftToTravel[0] = Points[i]->X + Distance[0] + 1.0;
+			Points[i]->X = 1.0 + DistanceLeftToTravel[0];
+		}
+		else {
+			Points[i]->X += Distance[0];
+		}
+
+		if (Points[i]->Y + Distance[1] > 1.0) {//Handling the Y-axis
+			DistanceLeftToTravel[1] = Points[i]->Y + Distance[1] - 1.0;
+			Points[i]->Y = -1.0 + DistanceLeftToTravel[1];
+		}
+		else if (Points[i]->Y + Distance[1] < -1.0) {
+			DistanceLeftToTravel[1] = Points[i]->Y + Distance[1] + 1.0;
+			Points[i]->Y = 1.0 + DistanceLeftToTravel[1];
+		}
+		else {
+			Points[i]->Y += Distance[1];
+		}
 	}
 }
 
+//Reset the Forces acting on each point back to zero
 void ResetPointsForce(vector<Point*> Points) {
 	for (int i = 0; i < Points.size(); i++) {
-		Points[i]->Force[0] = 0.0;
-		Points[i]->Force[1] = 0.0;
-
+		Points[i]->Force = { 0.0, 0.0 };
 	}
 }
 
+//Cleaning up the Pointers to the Root and all its children nodes
 void Cleanup(Node* Parent) {
 	if (Parent->LeafNodes.size() > 0) {
 		for (int i = 0; i < Parent->LeafNodes.size(); i++) {
@@ -417,9 +450,6 @@ void Cleanup(Node* Parent) {
 
 void display(GLfloat X, GLfloat Y) {
     
-    
-    
-    
     //Square
     //        glVertex2f(1.0f, 1.0f);
     //        glVertex2f(1.0f, 0.0f);
@@ -432,14 +462,11 @@ void display(GLfloat X, GLfloat Y) {
     //    glVertex2f( (P.X + P.Size) - MoveDistance, (P.Y + P.Size));
     
     
-    glVertex2f( (X - Size) - MoveDistance, (Y + Size));
-    glVertex2f( (X - Size) - MoveDistance, (Y - Size));
-    glVertex2f( (X + Size) - MoveDistance, (Y - Size));
-    glVertex2f( (X + Size) - MoveDistance, (Y + Size));
-    
-    
-    
-    
+ //   glVertex2f( (X - Size) - MoveDistance, (Y + Size));
+ //   glVertex2f( (X - Size) - MoveDistance, (Y - Size));
+ //   glVertex2f( (X + Size) - MoveDistance, (Y - Size));
+ //  glVertex2f( (X + Size) - MoveDistance, (Y + Size));
+ 
     //this_thread::sleep_for(chrono::milliseconds(5));
     
     //MoveDistance = MoveDistance + 0.01f;

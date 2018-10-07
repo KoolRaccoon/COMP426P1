@@ -118,10 +118,10 @@ int main() {
 
             display(Pointss);//Displaying the points 
 			Tree(Root);//Building the tree
-			ComputeMassDistribution(Root);
-			CalculateForceOnPoint(Root);
-			CalculateMoveDistance(Pointss);
-			ResetPointsForce(Pointss);
+			//ComputeMassDistribution(Root);
+			//CalculateForceOnPoint(Root);
+			//CalculateMoveDistance(Pointss);
+			//ResetPointsForce(Pointss);
 			Cleanup(Root);//clear up the memory used by the tree
 			delete Root;
 
@@ -295,19 +295,23 @@ void Tree(Node * Parent){
         
         if (Leaf1->PointsInNodeQuadrant.size() >= 1){
             Parent->LeafNodes.push_back(Leaf1);
-            Tree(Leaf1);
+			thread ExpandLeaf1(Tree, Leaf1);
+            //Tree(Leaf1);
         }
         if (Leaf2->PointsInNodeQuadrant.size() >= 1){
             Parent->LeafNodes.push_back(Leaf2);
-            Tree(Leaf2);
+			thread ExpandLeaf2(Tree, Leaf2);
+            //Tree(Leaf2);
         }
         if (Leaf3->PointsInNodeQuadrant.size() >= 1){
             Parent->LeafNodes.push_back(Leaf3);
-            Tree(Leaf3);
+			thread ExpandLeaf3(Tree, Leaf3);
+            //Tree(Leaf3);
         }
         if (Leaf4->PointsInNodeQuadrant.size() >= 1){
             Parent->LeafNodes.push_back(Leaf4);
-            Tree(Leaf4);
+			thread ExpandLeaf4(Tree, Leaf4);
+            //Tree(Leaf4);
         }
     }
 }

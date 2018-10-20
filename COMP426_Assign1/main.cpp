@@ -47,7 +47,7 @@ struct Node {
 	double CenterOfMass[2] = {0.0};
 };
 
-int TotalPlanets = 100; //The total number of planets to be generated
+int TotalPlanets = 30; //The total number of planets to be generated
 vector<vector<double>> PlanetCoordinates(TotalPlanets, vector<double>(2));
 vector<Point*> Pointss;
 
@@ -111,7 +111,7 @@ int main() {
 			ComputeMassDistribution(Root);
 			CalculateForceOnPoint(Root);
 			CalculateMoveDistance(Pointss);
-			ResetPointsForce(Pointss);
+			//ResetPointsForce(Pointss);
 			Cleanup(Root);//clear up the memory used by the tree
 			delete Root;
 
@@ -145,16 +145,16 @@ void GenerateRandomPoints(int TotalPlanets){
 
 		//int randGalaxy = int(rand()) % 2;
 
-		if (i<TotalPlanets/2) {
+		//if (i<TotalPlanets/2) {
 
 			PlanetCoordinates[i][0] = 0.5 + r1 * cos(a1);
 			PlanetCoordinates[i][1] = 0.5 + r1 * sin(a1);
-		}
-		else {
-			PlanetCoordinates[i][0] = -0.5 + r2 * cos(a2);
-			PlanetCoordinates[i][1] = -0.5 + r2 * sin(a2);
+		//}
+		//else {
+			//PlanetCoordinates[i][0] = -0.5 + r2 * cos(a2);
+			//PlanetCoordinates[i][1] = -0.5 + r2 * sin(a2);
 
-		}
+		//}
 		bool DuplicatePoint = false; //Used to make sure that there are no duplicate points generated
 
         P->X = PlanetCoordinates[i][0];
@@ -304,8 +304,12 @@ void ComputeMassDistribution(Node *Parent){
 //Computes the Total Forces acting on each Planet.
 void CalculateForceOnPoint(Node * Root){
     for ( int i = 0; i < Pointss.size(); i++){
-        Pointss[i]->Force = CalculateResultingForce(Root, Pointss[i]);
-    }
+		vector<double> Force = { 0.0, 0.0 };
+		Force = CalculateResultingForce(Root, Pointss[i]);
+		Pointss[i]->Force[0] += Force[0];
+		Pointss[i]->Force[1] += Force[1];
+
+	}
 }
 
 // Computes the Total Force of the Tree that is acting upon a Certain Planet.
@@ -388,16 +392,20 @@ void CalculateMoveDistance(vector<Point*> Points) {
 		//Initialize the distance vectors of the points
 		double Distance[2] = {0.0};
 		double DistanceLeftToTravel[2] = {0.0};
-		double TimeValue = 0.030303; //30 frames per second
+		double Time = 0.001; //time frame is 1ms
 
 		//Determine the acceleration acting on each point
 		double Accelaration[2] = {0.0};
 		Accelaration[0] = Points[i]->Force[0] / Points[i]->Mass;
 		Accelaration[1] = Points[i]->Force[1] / Points[i]->Mass;
 
+		//Calculating the Final Speed of each point after a time frame
+		Points[i]->FinalSpeed[0] = Points[i]->InitialSpeed[0] + Time * Accelaration[0];
+		Points[i]->FinalSpeed[1] = Points[i]->InitialSpeed[1] + Time * Accelaration[1];
+
 		//Calculating the distance each point will travel on the screen
-		Distance[0] = Accelaration[0] * pow(TimeValue, 2.0);
-		Distance[1] = Accelaration[1] * pow(TimeValue, 2.0);
+		Distance[0] = Points[i]->InitialSpeed[0] * Time + Accelaration[0] * pow(Time, 2.0)/2;
+		Distance[1] = Points[i]->InitialSpeed[1] * Time + Accelaration[1] * pow(Time, 2.0)/2;
 
 		//Reinitializing the initial speed of each point after moving
 		Points[i]->InitialSpeed = Points[i]->FinalSpeed;
@@ -406,12 +414,14 @@ void CalculateMoveDistance(vector<Point*> Points) {
 		if (Points[i]->X + Distance[0] > 1.0) {//Handling the X-axis
 			DistanceLeftToTravel[0] = Points[i]->X + Distance[0] - 1.0;
 			//Points[i]->X = -1.0 + DistanceLeftToTravel[0];
-			Points[i]->X = -1.0 + Points[i]->X;
+			//Points[i]->X = -1.0 + Points[i]->X;
+			Points[i]->X = -1.0;
 		}
 		else if (Points[i]->X + Distance[0] < -1.0){
 			DistanceLeftToTravel[0] = Points[i]->X + Distance[0] + 1.0;
 			//Points[i]->X = 1.0 + DistanceLeftToTravel[0];
-			Points[i]->X = 1.0 + Points[i]->X;
+			//Points[i]->X = 1.0 + Points[i]->X;
+			Points[i]->X = 1.0;
 		}
 		else {
 			Points[i]->X += Distance[0];
@@ -420,12 +430,14 @@ void CalculateMoveDistance(vector<Point*> Points) {
 		if (Points[i]->Y + Distance[1] > 1.0) {//Handling the Y-axis
 			DistanceLeftToTravel[1] = Points[i]->Y + Distance[1] - 1.0;
 			//Points[i]->Y = -1.0 + DistanceLeftToTravel[1];
-			Points[i]->Y = -1.0 + Points[i]->Y;
+			//Points[i]->Y = -1.0 + Points[i]->Y;
+			Points[i]->Y = -1.0;
 		}
 		else if (Points[i]->Y + Distance[1] < -1.0) {
 			DistanceLeftToTravel[1] = Points[i]->Y + Distance[1] + 1.0;
 			//Points[i]->Y = 1.0 + DistanceLeftToTravel[1];
-			Points[i]->Y = 1.0 + Points[i]->Y;
+			//Points[i]->Y = 1.0 + Points[i]->Y;
+			Points[i]->Y = 1.0;
 		}
 		else {
 			Points[i]->Y += Distance[1];

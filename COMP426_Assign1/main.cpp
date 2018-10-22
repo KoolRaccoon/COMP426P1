@@ -24,7 +24,7 @@ struct Point {
     double X;
     double Y;
     double Size = 0.002f;
-    double Mass = (double(rand()) / double(RAND_MAX)* 1000000000) + 1.0;
+    double Mass = (double(rand()) / double(RAND_MAX)* 10000000) + 1.0;
 
     vector<double> Force			= {0.0, 0.0};
 	vector<double> InitialSpeed		= {0.0, 0.0};
@@ -47,7 +47,7 @@ struct Node {
 	double CenterOfMass[2] = {0.0};
 };
 
-int TotalPlanets = 30; //The total number of planets to be generated
+int TotalPlanets = 3; //The total number of planets to be generated
 vector<vector<double>> PlanetCoordinates(TotalPlanets, vector<double>(2));
 vector<Point*> Pointss;
 
@@ -58,8 +58,8 @@ void Tree(Node*);
 void ComputeMassDistribution(Node*);
 void CalculateForceOnPoint(Node*);
 vector<double> CalculateResultingForce(Node*, Point*);
-void CalculateMoveDistance(vector<Point*>);
-void ResetPointsForce(vector<Point*>);
+void CalculateMoveDistance(vector<Point*>, Node*);
+void ResetPointsForce(Point*);
 void Cleanup(Node*);
 
 const double G = 6.67398 * 0.00000000001;
@@ -110,7 +110,7 @@ int main() {
 			Tree(Root);//Building the tree
 			ComputeMassDistribution(Root);
 			CalculateForceOnPoint(Root);
-			CalculateMoveDistance(Pointss);
+			CalculateMoveDistance(Pointss, Root);
 			//ResetPointsForce(Pointss);
 			Cleanup(Root);//clear up the memory used by the tree
 			delete Root;
@@ -129,19 +129,29 @@ int main() {
 
 //Randomly generating points on the screen
 void GenerateRandomPoints(int TotalPlanets){
-	
-    for (int i=0; i< TotalPlanets; i++){
+
+	double R1 = 0.2;
+	double R2 = 0.4;
+
+	Point * BlackHole = new Point;
+	BlackHole->Mass = 10000000;
+	//BlackHole->Mass = (double(rand()) / double(RAND_MAX) * 10000000) + 1.0;
+	BlackHole->X = 0.5;
+	BlackHole->Y = 0.5;
+	Pointss.push_back(BlackHole);
+
+	for (int i=1; i< TotalPlanets; i++){
 		// Generating coordinates in such a way that the points appear in a circle on the screen
 		Point * P = new Point;
+
 		//Generating coordinates for galaxy 1
-		double R1 = 0.2;
 		double a1 = ((double(rand()) / double(RAND_MAX)) * 1.0) * 2 * 3.14159265359;
 		double r1 = R1 * sqrt((double(rand()) / double(RAND_MAX)) * 1.0);
 		
 		// Generating coordinates for galaxy 2;
-		double R2 = 0.4;
 		double a2 = ((double(rand()) / double(RAND_MAX)) * 1.0) * 2 * 3.14159265359; 
 		double r2 = R2 * sqrt((double(rand()) / double(RAND_MAX)) * 1.0);
+
 
 		//int randGalaxy = int(rand()) % 2;
 
@@ -160,7 +170,7 @@ void GenerateRandomPoints(int TotalPlanets){
         P->X = PlanetCoordinates[i][0];
         P->Y = PlanetCoordinates[i][1];
 
-		for (int j = 0; j < Pointss.size(); j++) {
+		for (int j = 1; j < Pointss.size(); j++) {
 			if (Pointss[j]->X == P->X && Pointss[j]->Y == P->Y) {
 				i--;
 				DuplicatePoint = true;
@@ -210,7 +220,7 @@ void Tree(Node * Parent){
         Parent->NodeHasOnlyOnePoint = false;
         
         //Each leaf will represent a different quadrant. Leaf1 is Quadrant 1, Leaf2 is Quadrant 2, ... and so forth.
-		Node *Leaf1 = new Node;
+ 		Node *Leaf1 = new Node;
 		Node *Leaf2 = new Node;
 		Node *Leaf3 = new Node;
 		Node *Leaf4 = new Node;
@@ -386,58 +396,68 @@ vector<double> CalculateResultingForce(Node *Parent, Point *TargetPlanet){
 }
 
 
-void CalculateMoveDistance(vector<Point*> Points) {
+void CalculateMoveDistance(vector<Point*> Points, Node * Root) {
 	
 	for (int i = 0; i < Points.size(); i++) {
 		//Initialize the distance vectors of the points
 		double Distance[2] = {0.0};
 		double DistanceLeftToTravel[2] = {0.0};
 		double Time = 0.001; //time frame is 1ms
+		double Theta = 0.0;
+		double r = 0.0;
 
 		//Determine the acceleration acting on each point
 		double Accelaration[2] = {0.0};
 		Accelaration[0] = Points[i]->Force[0] / Points[i]->Mass;
 		Accelaration[1] = Points[i]->Force[1] / Points[i]->Mass;
 
+		Theta = atan2(Accelaration[1], Accelaration[0]);
+		r = sqrt(pow((Root->CenterOfMass[0]), 2.0) + pow((Root->CenterOfMass[0]), 2.0));
+
+
 		//Calculating the Final Speed of each point after a time frame
 		Points[i]->FinalSpeed[0] = Points[i]->InitialSpeed[0] + Time * Accelaration[0];
 		Points[i]->FinalSpeed[1] = Points[i]->InitialSpeed[1] + Time * Accelaration[1];
 
 		//Calculating the distance each point will travel on the screen
-		Distance[0] = Points[i]->InitialSpeed[0] * Time + Accelaration[0] * pow(Time, 2.0)/2;
-		Distance[1] = Points[i]->InitialSpeed[1] * Time + Accelaration[1] * pow(Time, 2.0)/2;
+		Distance[0] = Points[i]->InitialSpeed[0] * Time + Accelaration[0] * pow(Time, 2)/2;
+		Distance[1] = Points[i]->InitialSpeed[1] * Time + Accelaration[1] * pow(Time, 2)/2;
 
 		//Reinitializing the initial speed of each point after moving
 		Points[i]->InitialSpeed = Points[i]->FinalSpeed;
 		
 		//Handling the cases where the point will move off screen and send it coming from the other side instead
 		if (Points[i]->X + Distance[0] > 1.0) {//Handling the X-axis
-			DistanceLeftToTravel[0] = Points[i]->X + Distance[0] - 1.0;
+			//DistanceLeftToTravel[0] = Points[i]->X + Distance[0] - 1.0;
 			//Points[i]->X = -1.0 + DistanceLeftToTravel[0];
 			//Points[i]->X = -1.0 + Points[i]->X;
 			Points[i]->X = -1.0;
+			ResetPointsForce(Points[i]);
 		}
 		else if (Points[i]->X + Distance[0] < -1.0){
-			DistanceLeftToTravel[0] = Points[i]->X + Distance[0] + 1.0;
+			//DistanceLeftToTravel[0] = Points[i]->X + Distance[0] + 1.0;
 			//Points[i]->X = 1.0 + DistanceLeftToTravel[0];
 			//Points[i]->X = 1.0 + Points[i]->X;
 			Points[i]->X = 1.0;
+			ResetPointsForce(Points[i]);
 		}
 		else {
 			Points[i]->X += Distance[0];
 		}
 
 		if (Points[i]->Y + Distance[1] > 1.0) {//Handling the Y-axis
-			DistanceLeftToTravel[1] = Points[i]->Y + Distance[1] - 1.0;
+			//DistanceLeftToTravel[1] = Points[i]->Y + Distance[1] - 1.0;
 			//Points[i]->Y = -1.0 + DistanceLeftToTravel[1];
 			//Points[i]->Y = -1.0 + Points[i]->Y;
 			Points[i]->Y = -1.0;
+			ResetPointsForce(Points[i]);
 		}
 		else if (Points[i]->Y + Distance[1] < -1.0) {
-			DistanceLeftToTravel[1] = Points[i]->Y + Distance[1] + 1.0;
+			//DistanceLeftToTravel[1] = Points[i]->Y + Distance[1] + 1.0;
 			//Points[i]->Y = 1.0 + DistanceLeftToTravel[1];
 			//Points[i]->Y = 1.0 + Points[i]->Y;
 			Points[i]->Y = 1.0;
+			ResetPointsForce(Points[i]);
 		}
 		else {
 			Points[i]->Y += Distance[1];
@@ -446,10 +466,9 @@ void CalculateMoveDistance(vector<Point*> Points) {
 }
 
 //Reset the Forces acting on each point back to zero
-void ResetPointsForce(vector<Point*> Points) {
-	for (int i = 0; i < Points.size(); i++) {
-		Points[i]->Force = { 0.0, 0.0 };
-	}
+void ResetPointsForce(Point* Point) {
+		Point->Force = { 0.0, 0.0 };
+		Point->InitialSpeed = { 0.0, 0.0 };
 }
 
 //Cleaning up the Pointers to the Root and all its children nodes

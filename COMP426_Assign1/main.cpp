@@ -1,4 +1,4 @@
-#include "pch.h"
+//#include "pch.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <math.h>
@@ -47,7 +47,7 @@ struct Node {
 	double CenterOfMass[2] = {0.0};
 };
 
-int TotalPlanets = 3; //The total number of planets to be generated
+int TotalPlanets = 15; //The total number of planets to be generated
 vector<vector<double>> PlanetCoordinates(TotalPlanets, vector<double>(2));
 vector<Point*> Pointss;
 
@@ -60,6 +60,7 @@ void CalculateForceOnPoint(Node*);
 vector<double> CalculateResultingForce(Node*, Point*);
 void CalculateMoveDistance(vector<Point*>, Node*);
 void ResetPointsForce(Point*);
+void ResetPointsInitialVelocity(Point*);
 void Cleanup(Node*);
 
 const double G = 6.67398 * 0.00000000001;
@@ -433,6 +434,7 @@ void CalculateMoveDistance(vector<Point*> Points, Node * Root) {
 			//Points[i]->X = -1.0 + Points[i]->X;
 			Points[i]->X = -1.0;
 			ResetPointsForce(Points[i]);
+            ResetPointsInitialVelocity(Points[i]);
 		}
 		else if (Points[i]->X + Distance[0] < -1.0){
 			//DistanceLeftToTravel[0] = Points[i]->X + Distance[0] + 1.0;
@@ -440,9 +442,11 @@ void CalculateMoveDistance(vector<Point*> Points, Node * Root) {
 			//Points[i]->X = 1.0 + Points[i]->X;
 			Points[i]->X = 1.0;
 			ResetPointsForce(Points[i]);
+            ResetPointsInitialVelocity(Points[i]);
 		}
 		else {
 			Points[i]->X += Distance[0];
+            ResetPointsForce(Points[i]);
 		}
 
 		if (Points[i]->Y + Distance[1] > 1.0) {//Handling the Y-axis
@@ -451,6 +455,7 @@ void CalculateMoveDistance(vector<Point*> Points, Node * Root) {
 			//Points[i]->Y = -1.0 + Points[i]->Y;
 			Points[i]->Y = -1.0;
 			ResetPointsForce(Points[i]);
+            ResetPointsInitialVelocity(Points[i]);
 		}
 		else if (Points[i]->Y + Distance[1] < -1.0) {
 			//DistanceLeftToTravel[1] = Points[i]->Y + Distance[1] + 1.0;
@@ -458,9 +463,11 @@ void CalculateMoveDistance(vector<Point*> Points, Node * Root) {
 			//Points[i]->Y = 1.0 + Points[i]->Y;
 			Points[i]->Y = 1.0;
 			ResetPointsForce(Points[i]);
+            ResetPointsInitialVelocity(Points[i]);
 		}
 		else {
 			Points[i]->Y += Distance[1];
+            ResetPointsForce(Points[i]);
 		}
 	}
 }
@@ -468,7 +475,11 @@ void CalculateMoveDistance(vector<Point*> Points, Node * Root) {
 //Reset the Forces acting on each point back to zero
 void ResetPointsForce(Point* Point) {
 		Point->Force = { 0.0, 0.0 };
-		Point->InitialSpeed = { 0.0, 0.0 };
+}
+
+//Reset the Forces acting on each point back to zero
+void ResetPointsInitialVelocity(Point* Point) {
+    Point->InitialSpeed = { 0.0, 0.0 };
 }
 
 //Cleaning up the Pointers to the Root and all its children nodes

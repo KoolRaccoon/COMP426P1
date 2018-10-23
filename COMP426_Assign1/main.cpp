@@ -1,4 +1,4 @@
-#include "pch.h"
+//#include "pch.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <math.h>
@@ -27,7 +27,7 @@ struct Point {
     double X;
     double Y;
     double Size = 0.002f;
-    double Mass = (double(rand()) / double(RAND_MAX)* 10) + 1.0;
+    double Mass = (double(rand()) / double(RAND_MAX)* 1) + 1.0;
 
     vector<double> Force			= {0.0, 0.0};
 	vector<double> InitialSpeed		= {0.0, 0.0};
@@ -50,7 +50,7 @@ struct Node {
 	double CenterOfMass[2] = {0.0};
 };
 
-int TotalPlanets = 3; //The total number of planets to be generated
+int TotalPlanets = 300; //The total number of planets to be generated
 vector<vector<double>> PlanetCoordinates(TotalPlanets, vector<double>(2));
 vector<Point*> Pointss;
 double PI = 3.14159265359;
@@ -152,55 +152,71 @@ void GenerateRandomPoints(int TotalPlanets){
 	double R1 = 0.2;
 	double R2 = 0.4;
 
-	Point * BlackHole = new Point;
-	BlackHole->Mass = 10000000000;
+	Point * BlackHole1 = new Point;
+	BlackHole1->Mass = 100000000000;
 	//BlackHole->Mass = (double(rand()) / double(RAND_MAX) * 10000000) + 1.0;
-	BlackHole->X = 0.5;
-	BlackHole->Y = 0.5;
-	Pointss.push_back(BlackHole);
+	BlackHole1->X = 0.5;
+	BlackHole1->Y = 0.5;
+	
 
-	for (int i=1; i< TotalPlanets; i++){
-		// Generating coordinates in such a way that the points appear in a circle on the screen
-		Point * P = new Point;
+    Point * BlackHole2 = new Point;
+    BlackHole2->Mass = 100000000000;
+    //BlackHole->Mass = (double(rand()) / double(RAND_MAX) * 10000000) + 1.0;
+    BlackHole2->X = -0.5;
+    BlackHole2->Y = -0.5;
+    
+	for (int i=0; i< TotalPlanets; i++){
+        
+        if (i==0){// Inserting Blackhole in galaxy 1
+          Pointss.push_back(BlackHole1);
+        }
+        else if ( i == TotalPlanets/2){ // Inserting Black Hole in Galaxy 2
+            Pointss.push_back(BlackHole2);
+        }
+        else {
+            
+            // Generating coordinates in such a way that the points appear in a circle on the screen
+            Point * P = new Point;
 
-		//Generating coordinates for galaxy 1
-		double a1 = ((double(rand()) / double(RAND_MAX)) * 1.0) * 2 * PI;
-		double r1 = R1 * sqrt((double(rand()) / double(RAND_MAX)) * 1.0);
-		
-		// Generating coordinates for galaxy 2;
-		double a2 = ((double(rand()) / double(RAND_MAX)) * 1.0) * 2 * PI;
-		double r2 = R2 * sqrt((double(rand()) / double(RAND_MAX)) * 1.0);
+            //Generating coordinates for galaxy 1
+            double a1 = ((double(rand()) / double(RAND_MAX)) * 1.0) * 2 * PI;
+            double r1 = R1 * sqrt((double(rand()) / double(RAND_MAX)) * 1.0);
+            
+            // Generating coordinates for galaxy 2;
+            double a2 = ((double(rand()) / double(RAND_MAX)) * 1.0) * 2 * PI;
+            double r2 = R2 * sqrt((double(rand()) / double(RAND_MAX)) * 1.0);
 
-		//Calculating Initial Velocity of the Planet 
-		double a3 = a1 - (PI / 2);
-		P->InitialSpeed[0] = (1.5 / R1) * cos(a3) * (R1 - r1) / R1;
-		P->InitialSpeed[1] = (1.5 / R1) * sin(a3) * (R1 - r1) / R1;
-		//int randGalaxy = int(rand()) % 2;
+            //Calculating Initial Velocity of the Planet 
+            double a3 = a1 - (PI / 2);
+            P->InitialSpeed[0] = (1.5 / R1) * cos(a3) * (R1 - r1) / R1;
+            P->InitialSpeed[1] = (1.5 / R1) * sin(a3) * (R1 - r1) / R1;
+            //int randGalaxy = int(rand()) % 2;
 
-		//if (i<TotalPlanets/2) {
-			
-				
-			PlanetCoordinates[i][0] = 0.5 + r1 * cos(a1);
-			PlanetCoordinates[i][1] = 0.5 + r1 * sin(a1);
-		//}
-		//else {
-			//PlanetCoordinates[i][0] = -0.5 + r2 * cos(a2);
-			//PlanetCoordinates[i][1] = -0.5 + r2 * sin(a2);
+            if (i<TotalPlanets/2) {
+                
+                    
+                PlanetCoordinates[i][0] = 0.5 + r1 * cos(a1);
+                PlanetCoordinates[i][1] = 0.5 + r1 * sin(a1);
+            }
+            else {
+                PlanetCoordinates[i][0] = -0.5 + r2 * cos(a2);
+                PlanetCoordinates[i][1] = -0.5 + r2 * sin(a2);
 
-		//}
-		bool DuplicatePoint = false; //Used to make sure that there are no duplicate points generated
+            }
+            bool DuplicatePoint = false; //Used to make sure that there are no duplicate points generated
 
-        P->X = PlanetCoordinates[i][0];
-        P->Y = PlanetCoordinates[i][1];
+            P->X = PlanetCoordinates[i][0];
+            P->Y = PlanetCoordinates[i][1];
 
-		for (int j = 1; j < Pointss.size(); j++) {
-			if (Pointss[j]->X == P->X && Pointss[j]->Y == P->Y) {
-				i--;
-				DuplicatePoint = true;
-			}
-		}
-		if (DuplicatePoint == false)
-	        Pointss.push_back(P); //Storing all the points in a vector of pointers
+            for (int j = 1; j < Pointss.size(); j++) {
+                if (Pointss[j]->X == P->X && Pointss[j]->Y == P->Y) {
+                    i--;
+                    DuplicatePoint = true;
+                }
+            }
+            if (DuplicatePoint == false)
+                Pointss.push_back(P); //Storing all the points in a vector of pointers
+        }
     }
 }
 
@@ -458,10 +474,10 @@ void CalculateMoveDistance(vector<Point*> Points, Node * Root) {
 		Distance[1] = Points[i]->InitialSpeed[1] * Time + Accelaration[1] * pow(Time, 2)/2;
 
 		//Calculating the Final Speed of each point after a time frame
-		Points[i]->FinalSpeed[0] = Velocity * cos(Theta - PI / 2) + Time * Accelaration[0];
-		Points[i]->FinalSpeed[1] = Velocity * sin(Theta - PI / 2) + Time * Accelaration[1];
-		//Points[i]->FinalSpeed[0] = Points[i]->InitialSpeed[0] + Time * Accelaration[0];
-		//Points[i]->FinalSpeed[1] = Points[i]->InitialSpeed[1] + Time * Accelaration[1];
+		//Points[i]->FinalSpeed[0] = Velocity * cos(Theta - PI / 2) + Time * Accelaration[0];
+		//Points[i]->FinalSpeed[1] = Velocity * sin(Theta - PI / 2) + Time * Accelaration[1];
+		Points[i]->FinalSpeed[0] = Points[i]->InitialSpeed[0] + Time * Accelaration[0];
+		Points[i]->FinalSpeed[1] = Points[i]->InitialSpeed[1] + Time * Accelaration[1];
 
 		//Reinitializing the initial speed of each point after moving
 		Points[i]->InitialSpeed = Points[i]->FinalSpeed;

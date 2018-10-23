@@ -62,7 +62,7 @@ void Tree(Node*);
 void ComputeMassDistribution(Node*);
 void CalculateForceOnPoint(Node*);
 vector<double> CalculateResultingForce(Node*, Point*);
-void CalculateMoveDistance(vector<Point*>, Node*);
+void CalculateMoveDistance(vector<Point*>&, Node*);
 void ResetPointsForce(Point*);
 void ResetPointsInitialVelocity(Point*);
 void Cleanup(Node*);
@@ -450,7 +450,7 @@ vector<double> CalculateResultingForce(Node *Parent, Point *TargetPlanet){
 }
 
 
-void CalculateMoveDistance(vector<Point*> Points, Node * Root) {
+void CalculateMoveDistance(vector<Point*> &Points, Node * Root) {
 	
 	for (int i = 0; i < Points.size(); i++) {
 		//Initialize the distance vectors of the points

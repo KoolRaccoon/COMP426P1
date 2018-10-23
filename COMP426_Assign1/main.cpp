@@ -27,7 +27,7 @@ struct Point {
     double X;
     double Y;
     double Size = 0.002f;
-    double Mass = (double(rand()) / double(RAND_MAX)* 10000) + 1.0;
+    double Mass = (double(rand()) / double(RAND_MAX)* 10) + 1.0;
 
     vector<double> Force			= {0.0, 0.0};
 	vector<double> InitialSpeed		= {0.0, 0.0};
@@ -50,7 +50,7 @@ struct Node {
 	double CenterOfMass[2] = {0.0};
 };
 
-int TotalPlanets = 2; //The total number of planets to be generated
+int TotalPlanets = 3; //The total number of planets to be generated
 vector<vector<double>> PlanetCoordinates(TotalPlanets, vector<double>(2));
 vector<Point*> Pointss;
 double PI = 3.14159265359;
@@ -68,6 +68,20 @@ void ResetPointsInitialVelocity(Point*);
 void Cleanup(Node*);
 
 const double G = 6.67398 * 0.00000000001;
+
+
+//class ApplyFoo {
+//	float *const my_a;
+//public:
+//	void operator()(const blocked_range<size_t>& r) const {
+//		float *a = my_a;
+//		for (size_t i = r.begin(); i != r.end(); ++i)
+//			Foo(a[i]);
+//	}
+//	ApplyFoo(float a[]) :
+//		my_a(a)
+//	{}
+//};
 
 int main() {
     srand(time(NULL));
@@ -273,31 +287,36 @@ void Tree(Node * Parent){
                 Leaf4->PlanetCount++;
             }
         }
-        
+		task_group g;
         if (Leaf1->PointsInNodeQuadrant.size() >= 1){
             Parent->LeafNodes.push_back(Leaf1);
 			//thread ExpandLeaf1(Tree, Leaf1);
 			//ExpandLeaf1.join();
-            Tree(Leaf1);
+			g.run([&] {Tree(Leaf1); });
+            //(Leaf1);
         }
         if (Leaf2->PointsInNodeQuadrant.size() >= 1){
             Parent->LeafNodes.push_back(Leaf2);
 			//thread ExpandLeaf2(Tree, Leaf2);
 			//ExpandLeaf2.join();
-            Tree(Leaf2);
+            //Tree(Leaf2);
+			g.run([&] {Tree(Leaf2); });
         }
         if (Leaf3->PointsInNodeQuadrant.size() >= 1){
             Parent->LeafNodes.push_back(Leaf3);
 			//thread ExpandLeaf3(Tree, Leaf3);
 			//ExpandLeaf3.join();
-            Tree(Leaf3);
+            //Tree(Leaf3);
+			g.run([&] {Tree(Leaf3); });
         }
         if (Leaf4->PointsInNodeQuadrant.size() >= 1){
             Parent->LeafNodes.push_back(Leaf4);
 			//thread ExpandLeaf4(Tree, Leaf4);
 			//ExpandLeaf4.join();
-            Tree(Leaf4);
+            //Tree(Leaf4);
+			g.run([&] {Tree(Leaf4); });
         }
+		g.wait();
     }
 }
 
@@ -322,13 +341,21 @@ void ComputeMassDistribution(Node *Parent){
 
 //Computes the Total Forces acting on each Planet.
 void CalculateForceOnPoint(Node * Root){
-    for ( int i = 0; i < Pointss.size(); i++){
+   /* for ( int i = 0; i < Pointss.size(); i++){
 		vector<double> Force = { 0.0, 0.0 };
 		Force = CalculateResultingForce(Root, Pointss[i]);
 		Pointss[i]->Force[0] += Force[0];
 		Pointss[i]->Force[1] += Force[1];
 
-	}
+	}*/
+
+	parallel_for (size_t(0), Pointss.size(), [&](size_t i) {
+		vector<double> Force = { 0.0, 0.0 };
+		Force = CalculateResultingForce(Root, Pointss[i]);
+		Pointss[i]->Force[0] += Force[0];
+		Pointss[i]->Force[1] += Force[1];
+
+	});
 }
 
 // Computes the Total Force of the Tree that is acting upon a Certain Planet.
@@ -433,6 +460,8 @@ void CalculateMoveDistance(vector<Point*> Points, Node * Root) {
 		//Calculating the Final Speed of each point after a time frame
 		Points[i]->FinalSpeed[0] = Velocity * cos(Theta - PI / 2) + Time * Accelaration[0];
 		Points[i]->FinalSpeed[1] = Velocity * sin(Theta - PI / 2) + Time * Accelaration[1];
+		//Points[i]->FinalSpeed[0] = Points[i]->InitialSpeed[0] + Time * Accelaration[0];
+		//Points[i]->FinalSpeed[1] = Points[i]->InitialSpeed[1] + Time * Accelaration[1];
 
 		//Reinitializing the initial speed of each point after moving
 		Points[i]->InitialSpeed = Points[i]->FinalSpeed;

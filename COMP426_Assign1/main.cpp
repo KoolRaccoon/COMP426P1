@@ -85,6 +85,7 @@ const double G = 6.67398 * 0.00000000001;
 
 int main() {
     srand(time(NULL));
+    tbb::task_scheduler_init init(300);  // Limiting number of threads to 300
 
     GenerateRandomPoints(TotalPlanets);
   
@@ -125,15 +126,16 @@ int main() {
 			Root->PlanetCount++;
 		}
 
-            display(Pointss);//Displaying the points 
-			Tree(Root);//Building the tree
-			ComputeMassDistribution(Root);
-			CalculateForceOnPoint(Root);
-			CalculateMoveDistance(Pointss, Root);
-			//ResetPointsForce(Pointss);
-			Cleanup(Root);//clear up the memory used by the tree
-			delete Root;
+        display(Pointss);//Displaying the points
+        Tree(Root);//Building the tree
+        ComputeMassDistribution(Root);
+        CalculateForceOnPoint(Root);
+        CalculateMoveDistance(Pointss, Root);
+        
 
+    //ResetPointsForce(Pointss);
+        Cleanup(Root);//clear up the memory used by the tree
+        delete Root;
 			//std::cout << "Finished iterating through game loop" << std::endl;
 
         //Swap front and back buffers

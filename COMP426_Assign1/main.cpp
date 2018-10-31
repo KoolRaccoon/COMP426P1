@@ -1,4 +1,14 @@
-#include "pch.h"
+/* 
+Issues:
+    - The speeds in the left bottom corner galaxy are messed up
+    - Need to find a better speed - distance from center ration
+    - Find a better way to take care of particles going out of screen? 
+        -> Currently just pop back from the other side with 0 speed
+    - For debug purpose, make two functions for galaxy generation
+        -> 1 in center for debug and 2 for demo
+ */
+
+//#include "pch.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <math.h>
@@ -152,7 +162,7 @@ int main() {
 void GenerateRandomPoints(int TotalPlanets){
 
 	double R1 = 0.2;
-	double R2 = 0.4;
+	double R2 = 0.2;
 
 	Point * BlackHole1 = new Point;
 	BlackHole1->Mass = 10000000000;

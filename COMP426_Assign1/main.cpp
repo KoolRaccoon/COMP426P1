@@ -1,4 +1,4 @@
-//#include "pch.h"
+#include "pch.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <math.h>
@@ -26,8 +26,8 @@ struct Point {
     
     double X;
     double Y;
-    double Size = 0.002f;
-    double Mass = (double(rand()) / double(RAND_MAX)* 1) + 1.0;
+    double Size = 0.0025f;
+    double Mass = (double(rand()) / double(RAND_MAX)* 10) + 1.0;
 
     vector<double> Force			= {0.0, 0.0};
 	vector<double> InitialSpeed		= {0.0, 0.0};
@@ -50,7 +50,7 @@ struct Node {
 	double CenterOfMass[2] = {0.0};
 };
 
-int TotalPlanets = 300; //The total number of planets to be generated
+int TotalPlanets = 400; //The total number of planets to be generated
 vector<vector<double>> PlanetCoordinates(TotalPlanets, vector<double>(2));
 vector<Point*> Pointss;
 double PI = 3.14159265359;
@@ -85,7 +85,7 @@ const double G = 6.67398 * 0.00000000001;
 
 int main() {
     srand(time(NULL));
-    tbb::task_scheduler_init init(300);  // Limiting number of threads to 300
+    //tbb::task_scheduler_init init(300);  // Limiting number of threads to 300
 
     GenerateRandomPoints(TotalPlanets);
   
@@ -155,17 +155,24 @@ void GenerateRandomPoints(int TotalPlanets){
 	double R2 = 0.4;
 
 	Point * BlackHole1 = new Point;
-	BlackHole1->Mass = 100000000000;
+	BlackHole1->Mass = 10000000000;
 	//BlackHole->Mass = (double(rand()) / double(RAND_MAX) * 10000000) + 1.0;
 	BlackHole1->X = 0.5;
 	BlackHole1->Y = 0.5;
+    BlackHole1->InitialSpeed[0] = -0.3;
+    BlackHole1->Size = 0.005f;
+    //BlackHole1->InitialSpeed[1] = -0.2;
 	
 
     Point * BlackHole2 = new Point;
-    BlackHole2->Mass = 100000000000;
+    BlackHole2->Mass = 10000000000;
     //BlackHole->Mass = (double(rand()) / double(RAND_MAX) * 10000000) + 1.0;
     BlackHole2->X = -0.5;
     BlackHole2->Y = -0.5;
+    BlackHole2->InitialSpeed[0] = 0.3;
+    BlackHole2->Size = 0.005f;
+
+    //BlackHole2->InitialSpeed[1] = 0.2;
     
 	for (int i=0; i< TotalPlanets; i++){
         
@@ -346,7 +353,7 @@ void ComputeMassDistribution(Node *Parent){
         Parent->Mass = Parent->PointsInNodeQuadrant[0]->Mass;
     }
     else {
-        for (int i = 0; i < Parent->LeafNodes.size(); i ++){
+        for (int i = 0; i < Parent->LeafNodes.size(); i++){
             ComputeMassDistribution(Parent->LeafNodes[i]);
             Parent->Mass += Parent->LeafNodes[i]->Mass;
             Parent->CenterOfMass[0] += (Parent->LeafNodes[i]->Mass * Parent->LeafNodes[i]->CenterOfMass[0]);
@@ -379,7 +386,6 @@ void CalculateForceOnPoint(Node * Root){
 // Computes the Total Force of the Tree that is acting upon a Certain Planet.
 vector<double> CalculateResultingForce(Node *Parent, Point *TargetPlanet){
     vector<double> SumOfForces = {0.0, 0.0};
-	double ScaleDownFactor = 0.0;
 
 	if (Parent->PlanetCount == 1){
 			//Compute Force between two planets
@@ -422,7 +428,8 @@ vector<double> CalculateResultingForce(Node *Parent, Point *TargetPlanet){
 				double dis = 0;
 				Xcomponent = Parent->CenterOfMass[0] - TargetPlanet->X;
 				Ycomponent = Parent->CenterOfMass[1] - TargetPlanet->Y;
-                Theta = tan((Ycomponent)/(Xcomponent));
+                Theta = atan2(Ycomponent, Xcomponent);
+                //Theta = tan((Ycomponent)/(Xcomponent));
                 dis   = sqrt(pow((Xcomponent), 2.0) + pow((Ycomponent), 2.0));
 
 				//If the point sits on top of the Center of Mass of the Node then the resulting force will be 0.	

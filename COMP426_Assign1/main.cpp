@@ -60,7 +60,7 @@ struct Node {
 	double CenterOfMass[2] = {0.0};
 };
 
-int TotalPlanets = 50; //The total number of planets to be generated
+int TotalPlanets = 600; //The total number of planets to be generated
 vector<vector<double>> PlanetCoordinates(TotalPlanets, vector<double>(2));
 vector<Point*> Pointss;
 double PI = 3.14159265359;
@@ -98,8 +98,8 @@ int main() {
     srand(time(NULL));
     //tbb::task_scheduler_init init(300);  // Limiting number of threads to 300
 
-    GenerateRandomPoints1Galaxy(TotalPlanets);
-//    GenerateRandomPoints2Galaxy(TotalPlanets);
+//    GenerateRandomPoints1Galaxy(TotalPlanets);
+    GenerateRandomPoints2Galaxy(TotalPlanets);
     
     //Initialize the library
     if (!glfwInit()){
@@ -171,7 +171,7 @@ void GenerateRandomPoints2Galaxy(int TotalPlanets){
 	//BlackHole->Mass = (double(rand()) / double(RAND_MAX) * 10000000) + 1.0;
 	BlackHole1->X = 0.5;
 	BlackHole1->Y = 0.5;
-    BlackHole1->InitialSpeed[0] = -0.3;
+    BlackHole1->InitialSpeed[0] = -0.4;
     BlackHole1->Size = 0.005f;
     //BlackHole1->InitialSpeed[1] = -0.2;
 	
@@ -181,7 +181,7 @@ void GenerateRandomPoints2Galaxy(int TotalPlanets){
     //BlackHole->Mass = (double(rand()) / double(RAND_MAX) * 10000000) + 1.0;
     BlackHole2->X = -0.5;
     BlackHole2->Y = -0.5;
-    BlackHole2->InitialSpeed[0] = 0.3;
+    BlackHole2->InitialSpeed[0] = 0.4;
     BlackHole2->Size = 0.005f;
 
     //BlackHole2->InitialSpeed[1] = 0.2;
@@ -212,7 +212,7 @@ void GenerateRandomPoints2Galaxy(int TotalPlanets){
             if (i<TotalPlanets/2) {
                 //Calculating Initial Velocity of the Planet
                 a3 = a1 - (PI / 2);
-                P->InitialSpeed[0] = -0.3 + (1.5 / R1) * cos(a3) * (R1 - r1) / R1;
+                P->InitialSpeed[0] = -0.4 + (1.5 / R1) * cos(a3) * (R1 - r1) / R1;
                 P->InitialSpeed[1] = (1.5 / R1) * sin(a3) * (R1 - r1) / R1;
 
                     
@@ -222,7 +222,7 @@ void GenerateRandomPoints2Galaxy(int TotalPlanets){
             else {
                 //Calculating Initial Velocity of the Planet
                 a3 = a2 - (PI / 2);
-                P->InitialSpeed[0] = 0.3 + (1.5 / R2) * cos(a3) * (R2 - r2) / R2;
+                P->InitialSpeed[0] = 0.4 + (1.5 / R2) * cos(a3) * (R2 - r2) / R2;
                 P->InitialSpeed[1] = (1.5 / R2) * sin(a3) * (R2 - r2) / R2;
 
                 
@@ -277,8 +277,8 @@ void GenerateRandomPoints1Galaxy(int TotalPlanets){
 
             //Calculating Initial Velocity of the Planet
             double a3 = a1 - (PI / 2);
-            P->InitialSpeed[0] = (1.5 / R1) * cos(a3) * (r1 / (R1*1.5));
-            P->InitialSpeed[1] = (1.5 / R1) * sin(a3) * (r1 / (R1*1.5));
+            P->InitialSpeed[0] = (1.5 / R1) * cos(a3) * (r1 / (R1*1.2));
+            P->InitialSpeed[1] = (1.5 / R1) * sin(a3) * (r1 / (R1*1.2));
             //int randGalaxy = int(rand()) % 2;
     
             PlanetCoordinates[i][0] = BlackHole1->X + r1 * cos(a1);
@@ -536,13 +536,15 @@ void CalculateMoveDistance(vector<Point*> &Points, Node * Root) {
 	
 	for (int i = 0; i < Points.size(); i++) {
 		//Initialize the distance vectors of the points
-		double Distance[2] = {0.0};
-		double DistanceLeftToTravel[2] = {0.0};
-		double Time = 0.001; //time frame is 1ms
-		double Theta = 0.0;
-		double r = 0.0;
-        const double MAX_ACC =  100.0;
-        const double MIN_ACC = -100.0;
+		double Distance[2]              =  {0.0};
+		//double DistanceLeftToTravel[2]  =  {0.0};
+		double Time                     =  0.001; //time frame is 1ms
+		//double Theta                    =  0.0;
+		//double r                        =  0.0;
+        const double MAX_ACC            =  300.0;
+        const double MIN_ACC            = -300.0;
+        const double MAX_SPEED          =  7.0;
+        const double MIN_SPEED          = -7.0;
 
 		//Determine the acceleration acting on each point
 		double Accelaration[2] = {0.0};
@@ -550,19 +552,19 @@ void CalculateMoveDistance(vector<Point*> &Points, Node * Root) {
 		Accelaration[1] = Points[i]->Force[1] / Points[i]->Mass;
 
         // Limiting the Acceleration if it is too high
-//        if (Accelaration[0] > MAX_ACC)
-//            Accelaration[0] = MAX_ACC;
-//        
-//        else if (Accelaration[0] < MIN_ACC)
-//            Accelaration[0] = MIN_ACC;
-//        
-//        
-//        //Initializing speed on the Y-axis
-//        if (Accelaration[1] > MAX_ACC)
-//            Accelaration[1] = MAX_ACC;
-//        
-//        else if (Accelaration[1] < MIN_ACC)
-//            Accelaration[1] = MIN_ACC;
+        if (Accelaration[0] > MAX_ACC)
+            Accelaration[0] = MAX_ACC;
+        
+        else if (Accelaration[0] < MIN_ACC)
+            Accelaration[0] = MIN_ACC;
+        
+        
+        //Initializing speed on the Y-axis
+        if (Accelaration[1] > MAX_ACC)
+            Accelaration[1] = MAX_ACC;
+        
+        else if (Accelaration[1] < MIN_ACC)
+            Accelaration[1] = MIN_ACC;
         
         
 //		double Ac = sqrt(pow(Accelaration[0], 2) + pow(Accelaration[1], 2));
@@ -582,8 +584,24 @@ void CalculateMoveDistance(vector<Point*> &Points, Node * Root) {
 		Points[i]->FinalSpeed[1] = Points[i]->InitialSpeed[1] + Time * Accelaration[1];
         
         
-        Points[i]->InitialSpeed[0] = Points[i]->FinalSpeed[0];
-        Points[i]->InitialSpeed[1] = Points[i]->FinalSpeed[1];
+        if ( Points[i]->InitialSpeed[0] > MAX_SPEED)
+             Points[i]->InitialSpeed[0] = MAX_SPEED;
+
+        else if ( Points[i]->InitialSpeed[0] < MIN_SPEED)
+             Points[i]->InitialSpeed[0] = MIN_SPEED;
+        else
+            Points[i]->InitialSpeed[0] = Points[i]->FinalSpeed[0];
+        
+
+        //Initializing speed on the Y-axis
+        if (Points[i]->InitialSpeed[1] > MAX_SPEED)
+            Points[i]->InitialSpeed[1] = MAX_SPEED;
+
+        else if (Points[i]->InitialSpeed[1] < MIN_SPEED)
+            Points[i]->InitialSpeed[1] = MIN_SPEED;
+        else
+            Points[i]->InitialSpeed[1] = Points[i]->FinalSpeed[1];
+        
         
         if (i == 5){
             cout << "Points 5  " <<
@@ -595,17 +613,17 @@ void CalculateMoveDistance(vector<Point*> &Points, Node * Root) {
 			//DistanceLeftToTravel[0] = Points[i]->X + Distance[0] - 1.0;
 			//Points[i]->X = -1.0 + DistanceLeftToTravel[0];
 			//Points[i]->X = -1.0 + Points[i]->X;
-			Points[i]->X = -1.0;
+//			Points[i]->X = -1.0;
 			ResetPointsForce(Points[i]);
-            ResetPointsInitialVelocity(Points[i]);
+//            ResetPointsInitialVelocity(Points[i]);
 		}
 		else if (Points[i]->X + Distance[0] < -1.0){
 			//DistanceLeftToTravel[0] = Points[i]->X + Distance[0] + 1.0;
 			//Points[i]->X = 1.0 + DistanceLeftToTravel[0];
 			//Points[i]->X = 1.0 + Points[i]->X;
-			Points[i]->X = 1.0;
+//			Points[i]->X = 1.0;
 			ResetPointsForce(Points[i]);
-            ResetPointsInitialVelocity(Points[i]);
+//            ResetPointsInitialVelocity(Points[i]);
 		}
 		else {
 			Points[i]->X += Distance[0];
@@ -616,17 +634,17 @@ void CalculateMoveDistance(vector<Point*> &Points, Node * Root) {
 			//DistanceLeftToTravel[1] = Points[i]->Y + Distance[1] - 1.0;
 			//Points[i]->Y = -1.0 + DistanceLeftToTravel[1];
 			//Points[i]->Y = -1.0 + Points[i]->Y;
-			Points[i]->Y = -1.0;
+//			Points[i]->Y = -1.0;
 			ResetPointsForce(Points[i]);
-            ResetPointsInitialVelocity(Points[i]);
+//            ResetPointsInitialVelocity(Points[i]);
 		}
 		else if (Points[i]->Y + Distance[1] < -1.0) {
 			//DistanceLeftToTravel[1] = Points[i]->Y + Distance[1] + 1.0;
 			//Points[i]->Y = 1.0 + DistanceLeftToTravel[1];
 			//Points[i]->Y = 1.0 + Points[i]->Y;
-			Points[i]->Y = 1.0;
+//			Points[i]->Y = 1.0;
 			ResetPointsForce(Points[i]);
-            ResetPointsInitialVelocity(Points[i]);
+//            ResetPointsInitialVelocity(Points[i]);
 		}
 		else {
 			Points[i]->Y += Distance[1];

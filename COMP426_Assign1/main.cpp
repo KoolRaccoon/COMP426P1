@@ -37,7 +37,7 @@ struct Point {
     double X;
     double Y;
     double Size = 0.0025f;
-    double Mass = (double(rand()) / double(RAND_MAX)* 10) + 1.0;
+    double Mass = (double(rand()) / double(RAND_MAX)* 1) + 1.0;
 
     vector<double> Force			= {0.0, 0.0};
 	vector<double> InitialSpeed		= {0.0, 0.0};
@@ -60,13 +60,14 @@ struct Node {
 	double CenterOfMass[2] = {0.0};
 };
 
-int TotalPlanets = 400; //The total number of planets to be generated
+int TotalPlanets = 50; //The total number of planets to be generated
 vector<vector<double>> PlanetCoordinates(TotalPlanets, vector<double>(2));
 vector<Point*> Pointss;
 double PI = 3.14159265359;
 
 void display(vector<Point*>);
-void GenerateRandomPoints(int);
+void GenerateRandomPoints1Galaxy(int);
+void GenerateRandomPoints2Galaxy(int);
 //void display(double, double);
 void Tree(Node*);
 void ComputeMassDistribution(Node*);
@@ -97,8 +98,9 @@ int main() {
     srand(time(NULL));
     //tbb::task_scheduler_init init(300);  // Limiting number of threads to 300
 
-    GenerateRandomPoints(TotalPlanets);
-  
+    GenerateRandomPoints1Galaxy(TotalPlanets);
+//    GenerateRandomPoints2Galaxy(TotalPlanets);
+    
     //Initialize the library
     if (!glfwInit()){
         std::cout << "Error initializing GLFW" << std::endl;
@@ -159,10 +161,10 @@ int main() {
     }
 
 //Randomly generating points on the screen
-void GenerateRandomPoints(int TotalPlanets){
+void GenerateRandomPoints2Galaxy(int TotalPlanets){
 
 	double R1 = 0.2;
-	double R2 = 0.2;
+	double R2 = 0.4;
 
 	Point * BlackHole1 = new Point;
 	BlackHole1->Mass = 10000000000;
@@ -205,21 +207,27 @@ void GenerateRandomPoints(int TotalPlanets){
             double a2 = ((double(rand()) / double(RAND_MAX)) * 1.0) * 2 * PI;
             double r2 = R2 * sqrt((double(rand()) / double(RAND_MAX)) * 1.0);
 
-            //Calculating Initial Velocity of the Planet 
-            double a3 = a1 - (PI / 2);
-            P->InitialSpeed[0] = (1.5 / R1) * cos(a3) * (R1 - r1) / R1;
-            P->InitialSpeed[1] = (1.5 / R1) * sin(a3) * (R1 - r1) / R1;
             //int randGalaxy = int(rand()) % 2;
-
+            double a3 = 0.0;
             if (i<TotalPlanets/2) {
-                
+                //Calculating Initial Velocity of the Planet
+                a3 = a1 - (PI / 2);
+                P->InitialSpeed[0] = -0.3 + (1.5 / R1) * cos(a3) * (R1 - r1) / R1;
+                P->InitialSpeed[1] = (1.5 / R1) * sin(a3) * (R1 - r1) / R1;
+
                     
-                PlanetCoordinates[i][0] = 0.5 + r1 * cos(a1);
-                PlanetCoordinates[i][1] = 0.5 + r1 * sin(a1);
+                PlanetCoordinates[i][0] = BlackHole1->X  + r1 * cos(a1);
+                PlanetCoordinates[i][1] = BlackHole1->Y  + r1 * sin(a1);
             }
             else {
-                PlanetCoordinates[i][0] = -0.5 + r2 * cos(a2);
-                PlanetCoordinates[i][1] = -0.5 + r2 * sin(a2);
+                //Calculating Initial Velocity of the Planet
+                a3 = a2 - (PI / 2);
+                P->InitialSpeed[0] = 0.3 + (1.5 / R2) * cos(a3) * (R2 - r2) / R2;
+                P->InitialSpeed[1] = (1.5 / R2) * sin(a3) * (R2 - r2) / R2;
+
+                
+                PlanetCoordinates[i][0] = BlackHole2->X + r2 * cos(a2);
+                PlanetCoordinates[i][1] = BlackHole2->Y + r2 * sin(a2);
 
             }
             bool DuplicatePoint = false; //Used to make sure that there are no duplicate points generated
@@ -239,27 +247,84 @@ void GenerateRandomPoints(int TotalPlanets){
     }
 }
 
+//===========================================================================================//
+//Randomly generating points on the screen
+void GenerateRandomPoints1Galaxy(int TotalPlanets){
+    
+    double R1 = 0.3;
+
+    Point * BlackHole1 = new Point;
+    BlackHole1->Mass = 30000000000;
+    //BlackHole->Mass = (double(rand()) / double(RAND_MAX) * 10000000) + 1.0;
+    BlackHole1->X = 0.0;
+    BlackHole1->Y = 0.0;
+    BlackHole1->Size = 0.005f;
+//    BlackHole1->InitialSpeed[1] = -0.2;
+    
+    for (int i=0; i< TotalPlanets; i++){
+        
+        if (i==0){// Inserting Blackhole in galaxy 1
+            Pointss.push_back(BlackHole1);
+        }
+        else {
+            
+            // Generating coordinates in such a way that the points appear in a circle on the screen
+            Point * P = new Point;
+            
+            //Generating coordinates for galaxy 1
+            double a1 = ((double(rand()) / double(RAND_MAX)) * 1.0) * 2 * PI;
+            double r1 = R1 * sqrt((double(rand()) / double(RAND_MAX)) * 1.0);
+
+            //Calculating Initial Velocity of the Planet
+            double a3 = a1 - (PI / 2);
+            P->InitialSpeed[0] = (1.5 / R1) * cos(a3) * (r1 / (R1*1.5));
+            P->InitialSpeed[1] = (1.5 / R1) * sin(a3) * (r1 / (R1*1.5));
+            //int randGalaxy = int(rand()) % 2;
+    
+            PlanetCoordinates[i][0] = BlackHole1->X + r1 * cos(a1);
+            PlanetCoordinates[i][1] = BlackHole1->Y + r1 * sin(a1);
+
+            bool DuplicatePoint = false; //Used to make sure that there are no duplicate points generated
+            
+            P->X = PlanetCoordinates[i][0];
+            P->Y = PlanetCoordinates[i][1];
+            
+            for (int j = 1; j < Pointss.size(); j++) {
+                if (Pointss[j]->X == P->X && Pointss[j]->Y == P->Y) {
+                    i--;
+                    DuplicatePoint = true;
+                }
+            }
+            if (DuplicatePoint == false)
+                Pointss.push_back(P); //Storing all the points in a vector of pointers
+        }
+    }
+}
+
 //Function used to display the points on the screen
 void display(vector<Point*> Points) {
     
 	for (int j=0; j<Points.size(); j++){
-		if (j < Points.size() / 2) {
-			//Gives the color of the points that will appear on the screen for the first galaxy
-			glColor3f(1, 0.5, 0.5);
-		}
-		else {
-			//Gives the color of the points that will appear on the screen for the second galaxy
-			glColor3f(0.5, 0.5, 1);
-		}
-        glBegin(GL_POLYGON);
-        
-		glVertex2f((Points[j]->X - Points[j]->Size), (Points[j]->Y + Points[j]->Size));
-		glVertex2f((Points[j]->X - Points[j]->Size), (Points[j]->Y - Points[j]->Size));
-		glVertex2f((Points[j]->X + Points[j]->Size), (Points[j]->Y - Points[j]->Size));
-		glVertex2f((Points[j]->X + Points[j]->Size), (Points[j]->Y + Points[j]->Size));
+        double P_Size = Points[j]->Size;
+        if (Points[j]->X + P_Size < 1.0 || Points[j]->X - P_Size > -1.0 || Points[j]->Y + P_Size < 1.0 || Points[j]->Y - P_Size > -1.0){
+            if (j < Points.size() / 2) {
+                //Gives the color of the points that will appear on the screen for the first galaxy
+                glColor3f(1, 0.5, 0.5);
+            }
+            else {
+                //Gives the color of the points that will appear on the screen for the second galaxy
+                glColor3f(0.5, 0.5, 1);
+            }
+            glBegin(GL_POLYGON);
+            
+            glVertex2f((Points[j]->X - P_Size), (Points[j]->Y + P_Size));
+            glVertex2f((Points[j]->X - P_Size), (Points[j]->Y - P_Size));
+            glVertex2f((Points[j]->X + P_Size), (Points[j]->Y - P_Size));
+            glVertex2f((Points[j]->X + P_Size), (Points[j]->Y + P_Size));
 
-        glEnd();
-        glPopMatrix();
+            glEnd();
+            glPopMatrix();
+        }
     }
 }
 
@@ -439,7 +504,7 @@ vector<double> CalculateResultingForce(Node *Parent, Point *TargetPlanet){
 				Xcomponent = Parent->CenterOfMass[0] - TargetPlanet->X;
 				Ycomponent = Parent->CenterOfMass[1] - TargetPlanet->Y;
                 Theta = atan2(Ycomponent, Xcomponent);
-                //Theta = tan((Ycomponent)/(Xcomponent));
+//                Theta = tan((Ycomponent)/(Xcomponent));
                 dis   = sqrt(pow((Xcomponent), 2.0) + pow((Ycomponent), 2.0));
 
 				//If the point sits on top of the Center of Mass of the Node then the resulting force will be 0.	
@@ -476,17 +541,35 @@ void CalculateMoveDistance(vector<Point*> &Points, Node * Root) {
 		double Time = 0.001; //time frame is 1ms
 		double Theta = 0.0;
 		double r = 0.0;
+        const double MAX_ACC =  100.0;
+        const double MIN_ACC = -100.0;
 
 		//Determine the acceleration acting on each point
 		double Accelaration[2] = {0.0};
 		Accelaration[0] = Points[i]->Force[0] / Points[i]->Mass;
 		Accelaration[1] = Points[i]->Force[1] / Points[i]->Mass;
 
-		double Ac = sqrt(pow(Accelaration[0], 2) + pow(Accelaration[1], 2));
-		Theta = atan2(Accelaration[1], Accelaration[0]);
-		r = sqrt(pow((Root->CenterOfMass[0]), 2.0) + pow((Root->CenterOfMass[0]), 2.0));
-
-		double Velocity = sqrt(Ac*r);
+        // Limiting the Acceleration if it is too high
+//        if (Accelaration[0] > MAX_ACC)
+//            Accelaration[0] = MAX_ACC;
+//        
+//        else if (Accelaration[0] < MIN_ACC)
+//            Accelaration[0] = MIN_ACC;
+//        
+//        
+//        //Initializing speed on the Y-axis
+//        if (Accelaration[1] > MAX_ACC)
+//            Accelaration[1] = MAX_ACC;
+//        
+//        else if (Accelaration[1] < MIN_ACC)
+//            Accelaration[1] = MIN_ACC;
+        
+        
+//		double Ac = sqrt(pow(Accelaration[0], 2) + pow(Accelaration[1], 2));
+//		Theta = atan2(Accelaration[1], Accelaration[0]);
+//		r = sqrt(pow((Root->CenterOfMass[0]), 2.0) + pow((Root->CenterOfMass[0]), 2.0));
+//
+//		double Velocity = sqrt(Ac*r);
 
 		//Calculating the distance each point will travel on the screen
 		Distance[0] = Points[i]->InitialSpeed[0] * Time + Accelaration[0] * pow(Time, 2)/2;
@@ -497,10 +580,16 @@ void CalculateMoveDistance(vector<Point*> &Points, Node * Root) {
 		//Points[i]->FinalSpeed[1] = Velocity * sin(Theta - PI / 2) + Time * Accelaration[1];
 		Points[i]->FinalSpeed[0] = Points[i]->InitialSpeed[0] + Time * Accelaration[0];
 		Points[i]->FinalSpeed[1] = Points[i]->InitialSpeed[1] + Time * Accelaration[1];
-
-		//Reinitializing the initial speed of each point after moving
-		Points[i]->InitialSpeed = Points[i]->FinalSpeed;
-		
+        
+        
+        Points[i]->InitialSpeed[0] = Points[i]->FinalSpeed[0];
+        Points[i]->InitialSpeed[1] = Points[i]->FinalSpeed[1];
+        
+        if (i == 5){
+            cout << "Points 5  " <<
+            "Acceleration : X:  " << Accelaration[0] << "  Y:  " << Accelaration[1] << endl;
+        }
+        
 		//Handling the cases where the point will move off screen and send it coming from the other side instead
 		if (Points[i]->X + Distance[0] > 1.0) {//Handling the X-axis
 			//DistanceLeftToTravel[0] = Points[i]->X + Distance[0] - 1.0;
